@@ -96,6 +96,20 @@ uv run python scripts/launch_distributed.py --nproc 8 --mode fsdp --config confi
 | `small.yaml` | ~125M | 12 | 768 | 12 | 4 | Single GPU training |
 | `medium.yaml` | ~350M | 24 | 1024 | 16 | 4 | Multi-GPU training |
 
+## How This Compares to Similar Projects
+
+| | **ai-playground** | **[nanochat](https://github.com/karpathy/nanochat)** (Karpathy) | **[LLMs-from-scratch](https://github.com/rasbt/LLMs-from-scratch)** (Raschka) |
+|---|---|---|---|
+| **Architecture** | LLaMA-style (RMSNorm, RoPE, SwiGLU, GQA) | GPT-style (LayerNorm, learned pos, GELU) | GPT-2 style (LayerNorm, learned pos, GELU) |
+| **Purpose** | Learn internals + training + GPU performance | Train a real chatbot end-to-end for <$100 | Book companion — build an LLM step by step |
+| **Model sizes** | 10M / 125M / 350M | Variable via `--depth` (up to ~1.6B) | Small educational; loads GPT-2 weights (124M–1.5B) |
+| **Scope** | Architecture, training, inference, profiling, distributed | Full pipeline: pretrain, SFT, RL, eval, chat UI | Tokenization, pretraining, finetuning (classification + instruction) |
+| **Attention** | MHA/GQA/MQA configurable | MHA | MHA (GQA in bonus) |
+| **Distributed** | DDP + FSDP | DDP via torchrun | DDP in bonus appendix |
+| **Unique strengths** | GPU profiling, FLOP/MFU analysis, quantization, benchmarking | Speedrun leaderboard, auto-scaling hyperparams, RL + chat UI | Best-in-class pedagogy, 90K+ stars, published book |
+
+**In short:** This project uses a more modern architecture (LLaMA conventions) and uniquely focuses on GPU performance and profiling. nanochat goes further on the product side (SFT, RL, chat). Raschka's project is the most beginner-friendly with structured chapters and exercises.
+
 ## Project Structure
 
 ```
