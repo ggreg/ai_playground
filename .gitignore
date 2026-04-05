@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.env
+*.pt
+*.bin
+*.safetensors
+wandb/
+.ipynb_checkpoints/
+*.nsys-rep
+*.ncu-rep
+data/
+checkpoints/

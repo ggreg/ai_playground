@@ -1,0 +1,20 @@
+# Tiny model (~10M params) — for quick iteration on CPU/single GPU
+model:
+  vocab_size: 32000
+  dim: 256
+  n_layers: 6
+  n_heads: 8
+  n_kv_heads: 4      # GQA: 4 KV heads shared across 8 Q heads
+  max_seq_len: 512
+  dropout: 0.0
+
+training:
+  max_steps: 200
+  batch_size: 8
+  learning_rate: 3.0e-4
+  weight_decay: 0.1
+  warmup_steps: 20
+  grad_clip: 1.0
+  grad_accum_steps: 1
+  dtype: float32      # Safe for CPU/MPS
+  log_interval: 10

@@ -1,0 +1,23 @@
+# Medium model (~350M params) — needs multi-GPU for comfortable training
+model:
+  vocab_size: 32000
+  dim: 1024
+  n_layers: 24
+  n_heads: 16
+  n_kv_heads: 4      # GQA
+  max_seq_len: 2048
+  dropout: 0.0
+
+training:
+  max_steps: 20000
+  batch_size: 8
+  learning_rate: 2.0e-4
+  weight_decay: 0.1
+  warmup_steps: 500
+  min_lr: 1.0e-5
+  grad_clip: 1.0
+  grad_accum_steps: 8    # Effective batch = 64
+  dtype: bfloat16
+  log_interval: 10
+  eval_interval: 200
+  save_interval: 2000

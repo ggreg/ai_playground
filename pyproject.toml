@@ -1,0 +1,38 @@
+[project]
+name = "ai-playground"
+version = "0.1.0"
+description = "AI playground for experimenting with LLM internals, training, inference, and GPU optimization"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.2",
+    "transformers",
+    "datasets",
+    "tiktoken",
+    "wandb",
+    "pyyaml",
+    "matplotlib",
+    "jupyter",
+    "numpy",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "triton",
+    "flash-attn",
+    "bitsandbytes",
+]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
