@@ -68,6 +68,12 @@ Papers referenced throughout this codebase, organized by topic. Each entry inclu
   The "Chinchilla" paper: derives scaling laws showing that models and datasets should be scaled equally. A 70B model trained on 1.4T tokens outperforms a 280B model trained on 300B tokens. Our `flops.py` FLOP counting formula comes from this paper.
   [Paper](https://arxiv.org/abs/2203.15556)
 
+## Sampling & Decoding
+
+- **The Curious Case of Neural Text Degeneration** (Holtzman et al., 2020)
+  Introduces nucleus (top-p) sampling: instead of picking top-k tokens, sample from the smallest set whose cumulative probability exceeds p. Produces more diverse and natural text than top-k or greedy decoding. Implemented in `inference/generate.py`.
+  [Paper](https://arxiv.org/abs/1904.09751)
+
 ## Inference Optimization
 
 - **Efficient Memory Management for Large Language Model Serving with PagedAttention** (Kwon et al., 2023)

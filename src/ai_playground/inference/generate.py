@@ -7,7 +7,7 @@ from ..models.transformer import Transformer
 
 
 def top_p_sample(logits: torch.Tensor, temperature: float = 1.0, top_p: float = 0.9) -> torch.Tensor:
-    """Nucleus (top-p) sampling.
+    """Nucleus (top-p) sampling (Holtzman et al., 2020).
 
     1. Scale logits by temperature
     2. Sort probabilities descending
@@ -17,6 +17,8 @@ def top_p_sample(logits: torch.Tensor, temperature: float = 1.0, top_p: float = 
 
     Lower temperature = more deterministic
     Lower top_p = fewer tokens considered = more focused
+
+    Paper: https://arxiv.org/abs/1904.09751
     """
     if temperature == 0:
         return logits.argmax(dim=-1, keepdim=True)

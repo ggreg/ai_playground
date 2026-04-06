@@ -45,6 +45,11 @@ class Transformer(nn.Module):
     - SwiGLU activation (better than GELU, used in LLaMA/Mistral)
     - Grouped-Query Attention (reduces KV cache, configurable)
     - No bias terms anywhere (modern convention)
+
+    Papers:
+    - LLaMA: https://arxiv.org/abs/2302.13971
+    - LLaMA 2 (GQA): https://arxiv.org/abs/2307.09288
+    See also: docs/PAPERS.md § Transformer Architecture
     """
 
     def __init__(self, config: TransformerConfig):

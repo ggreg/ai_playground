@@ -36,6 +36,11 @@ class Trainer:
     - Cosine LR schedule with warmup
     - Gradient clipping
     - Tokens/sec and MFU tracking
+
+    Papers:
+    - Mixed Precision Training: https://arxiv.org/abs/1710.03740
+    - AdamW (Decoupled Weight Decay): https://arxiv.org/abs/1711.05101
+    See also: docs/PAPERS.md § Training Optimization
     """
 
     def __init__(

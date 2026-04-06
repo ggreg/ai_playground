@@ -15,11 +15,17 @@ class GroupedQueryAttention(nn.Module):
 
     Generalizes MHA, MQA, and GQA through n_kv_heads:
     - n_kv_heads == n_heads → standard Multi-Head Attention (MHA)
-    - n_kv_heads == 1       → Multi-Query Attention (MQA)
+    - n_kv_heads == 1       → Multi-Query Attention (MQA, Shazeer 2019)
     - 1 < n_kv_heads < n_heads → Grouped-Query Attention (GQA)
 
     GQA reduces KV cache memory by sharing K/V heads across groups of Q heads,
     with minimal quality loss compared to full MHA.
+
+    Papers:
+    - GQA: https://arxiv.org/abs/2305.13245
+    - MQA: https://arxiv.org/abs/1911.02150
+    - Flash Attention (used via SDPA): https://arxiv.org/abs/2205.14135
+    See also: docs/PAPERS.md § Attention Variants
     """
 
     def __init__(self, config: TransformerConfig):

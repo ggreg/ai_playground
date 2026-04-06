@@ -10,6 +10,9 @@ class RMSNorm(nn.Module):
 
     Simpler and faster than LayerNorm — no mean subtraction, no bias.
     Used in LLaMA, Mistral, and most modern LLMs.
+
+    Paper: https://arxiv.org/abs/1910.07467
+    See also: docs/PAPERS.md § Normalization & Activations
     """
 
     def __init__(self, dim: int, eps: float = 1e-5):
@@ -31,9 +34,12 @@ def precompute_rope_frequencies(
     theta: float = 10000.0,
     device: torch.device | None = None,
 ) -> torch.Tensor:
-    """Precompute the complex exponentials for RoPE.
+    """Precompute the complex exponentials for RoPE (Su et al., 2021).
 
     Returns: (max_seq_len, head_dim // 2) complex tensor
+
+    Paper: https://arxiv.org/abs/2104.09864
+    See also: docs/PAPERS.md § Positional Encodings
     """
     freqs = 1.0 / (theta ** (torch.arange(0, head_dim, 2, device=device).float() / head_dim))
     t = torch.arange(max_seq_len, device=device).float()
@@ -46,7 +52,9 @@ def apply_rope(
     xk: torch.Tensor,
     freqs_cis: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Apply Rotary Position Embedding to query and key tensors.
+    """Apply Rotary Position Embedding to query and key tensors (Su et al., 2021).
+
+    Paper: https://arxiv.org/abs/2104.09864
 
     Args:
         xq: (batch, seq_len, n_heads, head_dim)
@@ -76,6 +84,9 @@ class SwiGLU(nn.Module):
     Compared to standard FFN, SwiGLU uses 3 weight matrices instead of 2,
     but the hidden dimension is 2/3 of what a standard FFN would use,
     so total params are similar while performance is better.
+
+    Paper: https://arxiv.org/abs/2002.05202
+    See also: docs/PAPERS.md § Normalization & Activations
     """
 
     def __init__(self, dim: int, hidden_dim: int, dropout: float = 0.0):

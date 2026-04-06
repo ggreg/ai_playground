@@ -10,7 +10,7 @@ from torch.optim import Optimizer
 
 
 class AdamWFromScratch(Optimizer):
-    """AdamW implemented from scratch for learning purposes.
+    """AdamW implemented from scratch for learning purposes (Loshchilov & Hutter, 2019).
 
     This is functionally identical to torch.optim.AdamW but written
     explicitly so you can see every step of the algorithm:
@@ -24,6 +24,9 @@ class AdamWFromScratch(Optimizer):
     Note: AdamW applies weight decay DIRECTLY to parameters (decoupled),
     not through the gradient like L2 regularization. This is the key
     difference from the original Adam + L2 regularization.
+
+    Paper: https://arxiv.org/abs/1711.05101
+    See also: docs/PAPERS.md § Training Optimization
     """
 
     def __init__(

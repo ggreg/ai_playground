@@ -5,7 +5,10 @@ MFU = achieved_flops / theoretical_peak_flops
 This is the gold standard metric for how efficiently you're using
 your GPU. State-of-the-art training achieves ~40-60% MFU.
 
-Reference: "Scaling Language Models: Methods, Analysis & Insights from Training Gopher"
+References:
+- Gopher: https://arxiv.org/abs/2112.11446
+- Chinchilla scaling laws: https://arxiv.org/abs/2203.15556
+See also: docs/PAPERS.md § Training Optimization
 """
 
 from ..models.config import TransformerConfig
@@ -29,9 +32,10 @@ GPU_PEAK_TFLOPS = {
 def estimate_flops(config: TransformerConfig, seq_len: int, batch_size: int) -> dict:
     """Estimate FLOPs for a single forward+backward pass.
 
-    Uses the approximation from the Chinchilla paper:
+    Uses the approximation from the Chinchilla paper (Hoffmann et al., 2022):
     Forward pass ≈ 2 * N * T FLOPs (where N = params, T = tokens)
     Backward pass ≈ 2x forward
+    Paper: https://arxiv.org/abs/2203.15556
 
     More detailed breakdown:
     - Attention QKV projection: 2 * B * T * (3 * d_model * d_model)  [for MHA]

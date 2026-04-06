@@ -2,6 +2,11 @@
 
 Implements basic quantization schemes for learning purposes.
 For production, use bitsandbytes, GPTQ, or AWQ.
+
+See also: docs/PAPERS.md § Quantization
+- GPTQ: https://arxiv.org/abs/2210.17323
+- AWQ: https://arxiv.org/abs/2306.00978
+- LLM.int8(): https://arxiv.org/abs/2208.07339
 """
 
 import torch

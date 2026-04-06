@@ -41,6 +41,11 @@ def wrap_fsdp(model: nn.Module, local_rank: int) -> nn.Module:
     This enables training models that don't fit in a single GPU's memory.
 
     Equivalent to ZeRO Stage 3 in DeepSpeed.
+
+    Papers:
+    - PyTorch FSDP: https://arxiv.org/abs/2304.11277
+    - ZeRO: https://arxiv.org/abs/1910.02054
+    See also: docs/PAPERS.md § Distributed Training
     """
     from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
     from torch.distributed.fsdp import MixedPrecision
