@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Efficient LLM Training — Method Deep-Dives &amp; Radar Scores</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d2e;
+    --border: #2a2d3e;
+    --text: #e2e4ea;
+    --muted: #8b8fa3;
+    --accent: #6c8cff;
+    --accent2: #ff6caa;
+    --accent3: #4edba1;
+    --accent4: #ffb86c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+  .legend-bar {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2.5rem;
+    font-size: 0.85rem;
+  }
+  .legend-bar .item { display: flex; align-items: center; gap: 6px; }
+  .legend-bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.spd { background: var(--accent); }
+  .dot.mem { background: var(--accent3); }
+  .dot.eas { background: var(--accent4); }
+  .dot.mat { background: var(--accent2); }
+
+  /* Category headers */
+  .category {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 2.5rem 0 0.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    color: var(--accent);
+  }
+  .category-desc { color: var(--muted); font-size: 0.88rem; margin-bottom: 1.25rem; }
+
+  /* Method cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 2rem;
+    align-items: start;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+  }
+  .card .aka { color: var(--muted); font-size: 0.82rem; margin-bottom: 0.75rem; }
+  .card p { font-size: 0.9rem; color: var(--text); margin-bottom: 0.6rem; }
+  .card .detail { color: #c0c3d0; font-size: 0.86rem; }
+  .card .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 0.75rem; }
+  .tag {
+    font-size: 0.72rem;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .tag.green { background: rgba(78,219,161,0.15); color: var(--accent3); }
+  .tag.blue  { background: rgba(108,140,255,0.15); color: var(--accent); }
+  .tag.orange{ background: rgba(255,184,108,0.15); color: var(--accent4); }
+  .tag.pink  { background: rgba(255,108,170,0.15); color: var(--accent2); }
+
+  .score-badges {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 0.75rem;
+    font-size: 0.78rem;
+  }
+  .badge {
+    padding: 4px 0;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 600;
+  }
+  .badge.spd { background: rgba(108,140,255,0.12); color: var(--accent); }
+  .badge.mem { background: rgba(78,219,161,0.12); color: var(--accent3); }
+  .badge.eas { background: rgba(255,184,108,0.12); color: var(--accent4); }
+  .badge.mat { background: rgba(255,108,170,0.12); color: var(--accent2); }
+
+  .chart-wrap {
+    width: 220px;
+    height: 220px;
+    flex-shrink: 0;
+  }
+
+  /* Composite bar */
+  .composite-row {
+    margin-top: 0.6rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .composite-row strong { color: var(--text); }
+  .bar-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+  }
+
+  /* Reference links */
+  .ref-links {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 0.65rem;
+  }
+  .ref-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: opacity 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .ref-links a:hover { opacity: 0.8; }
+  .ref-links a.paper { background: rgba(108,140,255,0.12); color: var(--accent); }
+  .ref-links a.repo  { background: rgba(78,219,161,0.12); color: var(--accent3); }
+  .ref-links a.docs  { background: rgba(255,184,108,0.12); color: var(--accent4); }
+  .ref-links a svg { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
+
+  /* Table of Contents */
+  .toc {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+  }
+  .toc h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.82rem;
+  }
+  .toc-category {
+    margin-bottom: 0.75rem;
+  }
+  .toc-category > a {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .toc-category > a:hover { color: var(--accent); }
+  .toc-methods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 4px;
+    padding-left: 0.75rem;
+  }
+  .toc-methods a {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .toc-methods a:hover { color: var(--accent3); }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .card { grid-template-columns: 1fr; }
+    .chart-wrap { width: 180px; height: 180px; margin: 0 auto; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Efficient LLM Training — Method Deep-Dives</h1>
+<p class="subtitle">arXiv 2407.20018 · Each method scored on 4 axes (1–5) with radar visualization · Higher is always better</p>
+
+<div class="legend-bar">
+  <div class="item"><div class="dot spd"></div> SPD — Potential Speedup</div>
+  <div class="item"><div class="dot mem"></div> MEM — Memory Savings</div>
+  <div class="item"><div class="dot eas"></div> EAS — Ease of Implementation (high = easier)</div>
+  <div class="item"><div class="dot mat"></div> MAT — Maturity / Adoption</div>
+</div>
+
+<div id="toc" class="toc"><h2>Table of Contents</h2></div>
+<div id="app"></div>
+
+<script>
+// ── SVG icons ──────────────────────────────────────────────────────────
+const ICONS = {
+  paper: '<svg viewBox="0 0 16 16"><path d="M4 1h8a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1zm1 3v1h6V4H5zm0 3v1h6V7H5zm0 3v1h4v-1H5z"/></svg>',
+  repo:  '<svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>',
+  docs:  '<svg viewBox="0 0 16 16"><path d="M1 3.5A1.5 1.5 0 012.5 2h2A1.5 1.5 0 016 3.5V5h4V3.5A1.5 1.5 0 0111.5 2h2A1.5 1.5 0 0115 3.5v9a1.5 1.5 0 01-1.5 1.5h-2A1.5 1.5 0 0110 12.5V11H6v1.5A1.5 1.5 0 014.5 14h-2A1.5 1.5 0 011 12.5v-9zM6 9V7h4v2H6z"/></svg>'
+};
+
+// ── Method data (EAS = Ease of Implementation, higher = easier) ──────────
+const categories = [
+  {
+    name: "Data Parallelism",
+    desc: "Replicate or shard the model across devices; each device processes a different data batch.",
+    methods: [
+      {
+        title: "PyTorch DDP (Full Replication)",
+        aka: "DistributedDataParallel · Horovod",
+        scores: { SPD: 4, MEM: 1, EAS: 5, MAT: 5 },
+        tags: [["blue","Parallelism"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2006.15704", repo: "https://github.com/pytorch/pytorch", docs: "https://docs.pytorch.org/docs/stable/notes/ddp.html" },
+        body: "The simplest distributed training strategy. Every GPU holds a full copy of the model; after each backward pass an All-Reduce synchronizes gradients across workers. PyTorch DDP uses bucketed, overlapped All-Reduce to hide latency behind backward computation.",
+        detail: "Near-linear throughput scaling up to hundreds of GPUs on fast interconnects. Memory footprint is unchanged — each GPU stores full parameters, gradients, and optimizer states (typically 16–20 bytes per parameter for Adam + FP32). This makes DDP impractical as a sole strategy for models above ~1–2 B parameters per GPU. It remains the universal baseline and composes with every other parallelism axis."
+      },
+      {
+        title: "ZeRO Stage 3 / FSDP (Full Sharding)",
+        aka: "ZeRO-3 · Fully Sharded Data Parallelism · DeepSpeed · PyTorch FSDP",
+        scores: { SPD: 3, MEM: 5, EAS: 4, MAT: 5 },
+        tags: [["blue","Parallelism"],["green","Production"],["orange","Memory"]],
+        links: { paper: "https://arxiv.org/abs/1910.02054", repo: "https://github.com/pytorch/pytorch", docs: "https://docs.pytorch.org/docs/stable/fsdp.html" },
+        body: "Shards parameters, gradients, and optimizer states evenly across all W data-parallel workers, reducing per-GPU memory from O(Model) to O(Model / W). Before each forward/backward step, an All-Gather reconstructs needed parameters; after backward, Reduce-Scatter distributes gradient shards.",
+        detail: "Memory reduction is dramatic: a 70 B model with Adam FP32 needs ~980 GB of optimizer state alone, which ZeRO-3 divides across the cluster. The tradeoff is 1.5× the communication volume of DDP (All-Gather + Reduce-Scatter vs. All-Reduce). In practice, throughput drops 10–30% vs. DDP at the same GPU count, but ZeRO-3/FSDP enables training models that would otherwise not fit in memory at all. Shipped in both DeepSpeed and PyTorch natively."
+      },
+      {
+        title: "Hybrid Sharding (MiCS / FSDP Hybrid)",
+        aka: "MiCS · FSDP Hybrid Shard · ZeRO++",
+        scores: { SPD: 4, MEM: 4, EAS: 3, MAT: 4 },
+        tags: [["blue","Parallelism"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2304.11277", repo: null, docs: "https://docs.pytorch.org/docs/stable/fsdp.html" },
+        body: "A middle ground: shard within groups of F GPUs (typically within a node or rack), then All-Reduce across groups. This confines the expensive All-Gather to fast intra-node links while keeping inter-node traffic to a single All-Reduce.",
+        detail: "When F equals node size (e.g., 8 GPUs), memory per GPU drops ~8× while communication stays mostly on NVLink/NVSwitch. Meta and AWS use this approach at scale for models in the 30–70 B range. Tuning the shard factor F is the main complexity — too small and memory savings are insufficient; too large and cross-node All-Gathers dominate. MiCS at AWS showed near-DDP throughput with 8× memory reduction."
+      }
+    ]
+  },
+  {
+    name: "Tensor Parallelism",
+    desc: "Split individual weight matrices across GPUs within a node, parallelizing each layer's computation.",
+    methods: [
+      {
+        title: "Megatron-LM 1-D Tensor Parallelism",
+        aka: "Column-Row Parallel · Megatron-LM TP",
+        scores: { SPD: 4, MEM: 3, EAS: 3, MAT: 5 },
+        tags: [["blue","Parallelism"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/1909.08053", repo: "https://github.com/NVIDIA/Megatron-LM", docs: "https://docs.nvidia.com/megatron-core/developer-guide/latest/index.html" },
+        body: "Partitions each Transformer layer's weight matrices along one dimension: the first linear layer is split column-wise and the second row-wise. This requires two All-Reduce operations per layer (one in forward, one in backward), but each GPU only stores 1/T of the parameters for that layer.",
+        detail: "Best suited for intra-node parallelism (T = 4 or 8) where NVLink provides 600–900 GB/s per GPU pair. Beyond a single node, All-Reduce latency kills throughput. Memory per GPU drops proportionally with T for attention and FFN weights. Combined with pipeline parallelism, this is the backbone of every Megatron-LM and DeepSpeed training run for models from 20 B to 530 B+. The code changes are moderate — Megatron-LM provides drop-in column/row parallel linear layers."
+      },
+      {
+        title: "2-D / 2.5-D / 3-D Tensor Parallelism",
+        aka: "Optimus · Tesseract · 3-D TP",
+        scores: { SPD: 5, MEM: 4, EAS: 1, MAT: 2 },
+        tags: [["blue","Parallelism"],["pink","Research"]],
+        links: { paper: "https://arxiv.org/abs/2104.05343", repo: "https://github.com/hpcaitech/ColossalAI" },
+        body: "Higher-dimensional partitioning of weight tensors across a 2-D or 3-D mesh of processors. 2-D TP (Optimus) arranges GPUs in a √P × √P grid, reducing per-device communication from O(N/√P) to O(N/P^{1/3}) in the 3-D case.",
+        detail: "Theoretically optimal for very large processor counts where 1-D TP's All-Reduce becomes a bottleneck. 2.5-D TP (Tesseract) interpolates between 2-D and 3-D, trading extra memory for reduced communication. In practice, these approaches are extremely complex to implement — they require custom GEMM partitioning, careful device-mesh mapping, and are sensitive to network topology. No major framework ships them as production features; they remain active research directions for next-generation exascale training."
+      }
+    ]
+  },
+  {
+    name: "Pipeline Parallelism",
+    desc: "Split model layers across GPUs in stages; micro-batches flow through the pipeline to keep GPUs busy.",
+    methods: [
+      {
+        title: "Interleaved 1F1B Schedule",
+        aka: "Megatron-LM Interleaved Pipeline · 1 Forward 1 Backward",
+        scores: { SPD: 4, MEM: 3, EAS: 3, MAT: 5 },
+        tags: [["blue","Parallelism"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2104.04473", repo: "https://github.com/NVIDIA/Megatron-LM" },
+        body: "Each GPU holds multiple non-contiguous stages (e.g., stages 1, 5, 9 instead of stages 1, 2, 3). Micro-batches alternate between forward and backward passes in a 1F1B pattern, which reduces the pipeline bubble from O(P−1)/M (GPipe) to O(P−1)/(M·V) where V is the number of virtual stages per device.",
+        detail: "The standard pipeline schedule in Megatron-LM for all NVIDIA large-model training. With enough micro-batches, bubble overhead drops below 5%. The interleaved layout increases point-to-point communication (more stage boundaries) but the messages are smaller. Memory is balanced because each GPU holds layers from different parts of the model. This schedule composes cleanly with TP and DP, forming the 3-D parallelism backbone of GPT-3, Megatron-Turing 530B, and LLaMA-3 training."
+      },
+      {
+        title: "Zero Bubble Pipeline",
+        aka: "Zero Bubble V-Schedule · ZB-H1/H2",
+        scores: { SPD: 5, MEM: 3, EAS: 2, MAT: 2 },
+        tags: [["blue","Parallelism"],["pink","Research"]],
+        links: { paper: "https://arxiv.org/abs/2401.10241", repo: "https://github.com/sail-sg/zero-bubble-pipeline-parallelism" },
+        body: "Introduces a novel schedule that fills pipeline bubbles by splitting backward passes into two parts (input-gradient and weight-gradient) and interleaving them. Achieves near-zero idle time across all pipeline stages.",
+        detail: "The key insight is that weight gradient computation doesn't depend on the upstream stage's backward output, so it can be scheduled during what would otherwise be a bubble. The ZB-H1 variant achieves theoretically zero bubble with P−1 extra micro-batches of memory; ZB-H2 trades a tiny bubble for no extra memory. Benchmarks show >95% pipeline efficiency vs. ~80% for 1F1B on deep pipelines. The scheduling is significantly more complex and sensitive to micro-batch count. As of 2024, this is a research prototype without native framework support, but it represents the frontier of pipeline efficiency."
+      },
+      {
+        title: "GPipe",
+        aka: "GPipe · Micro-batch Pipeline",
+        scores: { SPD: 3, MEM: 3, EAS: 4, MAT: 5 },
+        tags: [["blue","Parallelism"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/1811.06965", repo: "https://github.com/kakaobrain/torchgpipe" },
+        body: "The pioneering pipeline parallelism approach. Splits a mini-batch into M micro-batches, runs all forward passes first, then all backward passes. The pipeline bubble is (P−1)/M of total time, where P is the number of pipeline stages.",
+        detail: "Simple to implement and reason about, but the bubble is large unless M >> P. For 8 stages with 32 micro-batches, bubble overhead is still ~22%. GPipe also requires storing activations for all M micro-batches simultaneously, increasing peak memory. Despite these limitations, its simplicity makes it a useful baseline and educational reference. Most production systems have moved to 1F1B or interleaved schedules."
+      }
+    ]
+  },
+  {
+    name: "Sequence Parallelism",
+    desc: "Distribute long sequences across GPUs to handle context lengths that exceed single-device memory.",
+    methods: [
+      {
+        title: "Megatron-SP",
+        aka: "Megatron Sequence Parallelism",
+        scores: { SPD: 3, MEM: 4, EAS: 4, MAT: 5 },
+        tags: [["blue","Parallelism"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2104.04473", repo: "https://github.com/NVIDIA/Megatron-LM" },
+        body: "Partitions the sequence dimension for operations outside the Tensor-Parallel region — specifically LayerNorm and Dropout. Within the TP group, each GPU already holds 1/T of hidden dimension; Megatron-SP extends this so each GPU also holds 1/T of the sequence for non-TP ops, replacing two All-Reduces with All-Gather + Reduce-Scatter.",
+        detail: "Memory savings come from distributing activation storage for LayerNorm and Dropout (which otherwise replicate the full sequence on every GPU). Communication volume is identical to standard TP — the operations are simply reorganized. This is why Megatron-SP is essentially free when TP is already in use and is enabled by default in Megatron-LM. It does not help with the attention computation itself (that still scales as O(N²))."
+      },
+      {
+        title: "DeepSpeed-Ulysses",
+        aka: "Ulysses Sequence Parallelism",
+        scores: { SPD: 4, MEM: 4, EAS: 4, MAT: 4 },
+        tags: [["blue","Parallelism"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2309.14509", repo: "https://github.com/microsoft/DeepSpeed", docs: "https://www.deepspeed.ai/tutorials/ds-sequence/" },
+        body: "Partitions the input sequence across GPUs before the attention layer. Uses All-to-All collectives to transpose between sequence-parallel and head-parallel layouts, so each GPU computes full attention over all heads for its sequence shard.",
+        detail: "The All-to-All approach is communication-efficient: total volume is O(N·d/P) vs. O(N²/P) for ring-attention variants at moderate sequence lengths. DeepSpeed-Ulysses scales well to 32–64 GPUs for sequences up to 256K tokens. It integrates cleanly with DeepSpeed's ZeRO stages and requires only minimal code changes (wrapping the attention module). Growing production adoption for long-context LLM training."
+      },
+      {
+        title: "DistFlashAttention",
+        aka: "Distributed Flash Attention · Ring Flash Attention",
+        scores: { SPD: 5, MEM: 5, EAS: 2, MAT: 2 },
+        tags: [["blue","Parallelism"],["pink","Research"],["orange","Memory"]],
+        links: { paper: "https://arxiv.org/abs/2310.03294", repo: "https://github.com/zhuzilin/ring-flash-attention" },
+        body: "Combines FlashAttention's tiled, I/O-efficient kernel with ring-based distributed computation. Each GPU holds a chunk of Q, K, V; key-value blocks are passed around a ring while each GPU incrementally accumulates its local attention output using the online softmax trick.",
+        detail: "Enables sequence lengths of 1M+ tokens by distributing both computation and memory. Each GPU only ever materializes O(block_size²) attention scores, and the ring ensures all K/V blocks visit all GPUs over P steps. The main challenge is implementation complexity: integrating with FlashAttention's CUDA kernel, handling causal masks across chunks, and managing the ring communication overlap. Several variants exist (Striped Attention, BurstAttention, WallFacer) optimizing different aspects. Not yet shipped in major frameworks but under active development."
+      }
+    ]
+  },
+  {
+    name: "Expert Parallelism (MoE)",
+    desc: "Distribute Mixture-of-Experts layers across GPUs; each token is routed to a subset of experts.",
+    methods: [
+      {
+        title: "Switch Transformer",
+        aka: "Switch Transformer · Top-1 MoE Routing",
+        scores: { SPD: 5, MEM: 3, EAS: 3, MAT: 4 },
+        tags: [["blue","Parallelism"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2101.03961", docs: "https://huggingface.co/docs/transformers/model_doc/switch_transformers" },
+        body: "Simplifies MoE routing to top-1 expert selection (each token goes to exactly one expert), reducing routing complexity and All-to-All communication by half compared to top-2 approaches. Demonstrated up to 7× training speedup over dense models at equivalent compute.",
+        detail: "The key contribution is showing that top-1 routing works well with auxiliary load-balancing losses. Each expert lives on a dedicated GPU, and tokens are dispatched via All-to-All. Communication volume depends on expert count and capacity factor. Switch Transformer scaled to 1.6T parameters with 2048 experts. The main challenges are load imbalance (some experts receive more tokens) and training instability at very large scale. Google has used this in production; open-source implementations exist in DeepSpeed-MoE and Fairseq."
+      },
+      {
+        title: "DeepSpeed-MoE",
+        aka: "DeepSpeed Mixture-of-Experts",
+        scores: { SPD: 4, MEM: 3, EAS: 4, MAT: 5 },
+        tags: [["blue","Parallelism"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2201.05596", repo: "https://github.com/microsoft/DeepSpeed", docs: "https://www.deepspeed.ai/tutorials/mixture-of-experts/" },
+        body: "A production MoE framework within DeepSpeed supporting top-1 and top-2 routing, expert parallelism, and integration with ZeRO data parallelism. Provides optimized All-to-All kernels and flexible expert placement across nodes.",
+        detail: "DeepSpeed-MoE combines expert parallelism with ZeRO Stage 1/2 for non-expert parameters, making it practical to train MoE models without custom infrastructure. Includes PR-MoE (Pyramid-Residual MoE) for improved routing and distillation recipes to compress MoE models for inference. The framework handles expert-data parallelism mapping automatically. Widely adopted in the open-source community for training Mixtral-style models."
+      }
+    ]
+  },
+  {
+    name: "Auto Parallelism",
+    desc: "Automatically search for optimal parallelism strategies across data, tensor, pipeline, and expert axes.",
+    methods: [
+      {
+        title: "Alpa",
+        aka: "Alpa · Automatic Inter/Intra-Op Parallelism",
+        scores: { SPD: 4, MEM: 4, EAS: 4, MAT: 3 },
+        tags: [["blue","Parallelism"],["orange","Automation"]],
+        links: { paper: "https://arxiv.org/abs/2201.12023", repo: "https://github.com/alpa-projects/alpa" },
+        body: "Formulates parallelism as a two-level optimization: intra-operator (tensor/data) parallelism within a pipeline stage solved via ILP, and inter-operator (pipeline) parallelism across stages solved via dynamic programming. The user provides a model and device mesh; Alpa returns an execution plan.",
+        detail: "Alpa's strength is generality — it can discover hybrid strategies that manual tuning might miss, such as different TP degrees for different layers. The ILP solver runs in minutes for billion-parameter models. Benchmarks showed Alpa matching or exceeding hand-tuned Megatron-LM configurations on GPT-3 scale models. Built on JAX/XLA. Adoption is moderate: researchers use it for exploration, but production teams often prefer the predictability of manual Megatron-LM configurations."
+      },
+      {
+        title: "DeepSpeed-Autotuning",
+        aka: "DeepSpeed Autotuner",
+        scores: { SPD: 3, MEM: 3, EAS: 5, MAT: 5 },
+        tags: [["green","Production"],["orange","Automation"]],
+        links: { repo: "https://github.com/microsoft/DeepSpeed", docs: "https://www.deepspeed.ai/tutorials/autotuning/" },
+        body: "Automatically searches over DeepSpeed's configuration space — ZeRO stages, micro-batch sizes, gradient accumulation, activation checkpointing, offloading — to find the fastest configuration that fits in memory.",
+        detail: "The simplest auto-parallelism tool: it runs short profiling trials with different configs and picks the winner. No model code changes required — just enable autotuning in the DeepSpeed config JSON. It won't discover novel parallelism strategies (limited to what DeepSpeed supports), but it reliably finds good configs 2–3× faster than manual tuning. Ideal for teams adopting DeepSpeed who want a quick performance baseline."
+      }
+    ]
+  },
+  {
+    name: "Computation Optimizations",
+    desc: "Operator-level and precision-level optimizations that improve arithmetic throughput and reduce memory per operation.",
+    methods: [
+      {
+        title: "Flash Attention 2",
+        aka: "FlashAttention-2 · Tri Dao",
+        scores: { SPD: 5, MEM: 5, EAS: 4, MAT: 5 },
+        tags: [["orange","Computation"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2307.08691", repo: "https://github.com/Dao-AILab/flash-attention" },
+        body: "A fused CUDA kernel for attention that tiles the Q, K, V computation to stay in GPU SRAM, avoiding materialization of the N×N attention matrix in HBM. FA2 improves on FA1 with better work partitioning across warps and thread blocks, achieving ~2× the speed of FA1.",
+        detail: "Memory drops from O(N²) to O(N) — a transformative reduction for long sequences. A 16K context model that would need 1 GB of attention memory per layer with standard attention uses ~1 MB with FlashAttention. Speed gains come from reduced HBM reads/writes (the bottleneck for memory-bound attention). FA2 reaches 50–73% of peak GPU FLOPS on A100/H100. Universally adopted: PyTorch, Hugging Face, Megatron-LM, DeepSpeed, JAX/XLA all integrate it. The single highest-ROI optimization in modern LLM training."
+      },
+      {
+        title: "BF16 Mixed-Precision Training",
+        aka: "Brain Float 16 · AMP BF16",
+        scores: { SPD: 4, MEM: 4, EAS: 4, MAT: 5 },
+        tags: [["orange","Computation"],["green","Production"]],
+        links: { docs: "https://docs.pytorch.org/docs/stable/amp.html" },
+        body: "Stores activations, gradients, and forward weights in BF16 (16-bit with 8-bit exponent) while keeping a master copy of weights in FP32 for the optimizer update. BF16's wider dynamic range vs. FP16 eliminates the need for loss scaling.",
+        detail: "Delivers ~2× Tensor Core throughput over FP32 and halves activation/gradient memory. The 8-bit exponent matches FP32's range, so overflow/underflow is rare — making BF16 a near-drop-in replacement. All modern accelerators (A100+, H100, TPUv3+, MI250X, GAUDI2) support BF16 natively. The only code change is typically one flag (torch.bfloat16 or amp.autocast). Combined with FlashAttention, BF16 is the default precision for virtually all LLM training runs today."
+      },
+      {
+        title: "FP8 Mixed-Precision (Transformer Engine)",
+        aka: "FP8 E4M3/E5M2 · NVIDIA Transformer Engine",
+        scores: { SPD: 5, MEM: 5, EAS: 2, MAT: 3 },
+        tags: [["orange","Computation"],["pink","Emerging"]],
+        links: { paper: "https://arxiv.org/abs/2310.18313", repo: "https://github.com/NVIDIA/TransformerEngine", docs: "https://docs.nvidia.com/deeplearning/transformer-engine/user-guide/index.html" },
+        body: "Uses 8-bit floating point for matrix multiplications: E4M3 (4-bit exponent, 3-bit mantissa) for forward pass weights/activations, and E5M2 (wider range) for gradients. NVIDIA's Transformer Engine dynamically manages per-tensor scaling factors to maintain accuracy.",
+        detail: "Theoretical 2× speedup over BF16 and 4× over FP32, with 50% memory reduction vs. BF16. In practice, gains are 30–60% over BF16 due to scaling overhead and mixed-precision fallback for sensitive operations. Requires Hopper (H100) or newer GPUs. The Transformer Engine handles scaling automatically, but users must validate convergence — some models need recipe tuning (delayed scaling, amax tracking). Adopted by early production users; expected to become standard as tooling matures."
+      },
+      {
+        title: "Triton Compiler",
+        aka: "OpenAI Triton · Triton JIT",
+        scores: { SPD: 4, MEM: 3, EAS: 3, MAT: 4 },
+        tags: [["orange","Computation"],["green","Production"]],
+        links: { repo: "https://github.com/triton-lang/triton", docs: "https://triton-lang.org/main/index.html" },
+        body: "A Python-based language for writing custom GPU kernels at a higher abstraction level than CUDA. Triton handles memory coalescing, shared memory management, and warp scheduling automatically from a tile-level program description.",
+        detail: "Triton bridges the gap between hand-written CUDA (maximum performance, extreme complexity) and compiler-generated code (convenient, often suboptimal). Users write ~50 lines of Triton to match ~500 lines of CUDA for fused kernels. PyTorch 2.0's torch.compile uses Triton as a backend for generating fused GPU kernels. Particularly impactful for custom attention variants, activation functions, and MoE routing kernels. Rapidly growing ecosystem with FlashAttention-Triton, FlagAttention, and xformers contributions."
+      }
+    ]
+  },
+  {
+    name: "Memory Optimizations",
+    desc: "Techniques that reduce peak GPU memory to enable larger models or batch sizes on fixed hardware.",
+    methods: [
+      {
+        title: "Activation Recomputation (Selective)",
+        aka: "Gradient Checkpointing · Selective Recomputation · Activation Checkpointing",
+        scores: { SPD: -1, MEM: 4, EAS: 4, MAT: 5 },
+        tags: [["orange","Memory"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2205.05198" },
+        body: "Instead of storing all intermediate activations for the backward pass, discard selected activations and recompute them during backpropagation. Selective recomputation targets only the most memory-intensive activations (e.g., attention scores) while keeping cheap-to-store activations.",
+        detail: "Full recomputation trades ~33% extra compute for ~60% activation memory reduction. Selective recomputation (as used in Megatron-LM) is smarter: it recomputes only attention activations (O(N²) memory) while keeping linear-layer activations (cheap, O(N·d)). This gives ~50% memory savings with only 5–10% throughput loss. Enabled by a single flag in most frameworks. Essential for training models with long sequences or on memory-constrained hardware."
+      },
+      {
+        title: "ZeRO Stage 1 (Optimizer State Sharding)",
+        aka: "ZeRO-1 · Optimizer State Partitioning",
+        scores: { SPD: 0, MEM: 3, EAS: 5, MAT: 5 },
+        tags: [["orange","Memory"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/1910.02054", repo: "https://github.com/microsoft/DeepSpeed" },
+        body: "Partitions only the optimizer states (e.g., Adam's first and second moments) across data-parallel workers. Each GPU stores 1/W of optimizer state but keeps full copies of parameters and gradients.",
+        detail: "For Adam with FP32 master weights, optimizer state is 12 bytes/param — the single largest memory consumer. ZeRO-1 reduces this to 12/W bytes/param with zero extra communication (optimizer states are only needed locally for the update step). On 8 GPUs, this alone frees ~1.5× the memory of the model weights. No throughput penalty, one-line config change. The single easiest memory optimization — should be enabled by default for any multi-GPU training."
+      },
+      {
+        title: "CPU Offloading (ZeRO-Offload)",
+        aka: "ZeRO-Offload · ZeRO-Infinity (SSD)",
+        scores: { SPD: -2, MEM: 5, EAS: 4, MAT: 5 },
+        tags: [["orange","Memory"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2101.06840", repo: "https://github.com/microsoft/DeepSpeed", docs: "https://www.deepspeed.ai/tutorials/zero-offload/" },
+        body: "Moves optimizer states and optionally parameters to CPU memory (ZeRO-Offload) or NVMe SSD (ZeRO-Infinity). The optimizer update runs on CPU, and parameters are streamed to GPU for forward/backward.",
+        detail: "Enables training a 13B model on a single GPU or a 1T model on a small cluster by exploiting the much larger capacity of CPU DRAM (256–1024 GB) and SSDs (TBs). The cost is severe: CPU optimizer updates are 10–50× slower, and PCIe bandwidth (32–64 GB/s) becomes a bottleneck for parameter streaming. ZeRO-Infinity adds NVMe prefetching and pinned memory to partially hide latency. Best used when the alternative is \"cannot train at all\" — not for maximizing throughput."
+      },
+      {
+        title: "VMM-Based Defragmentation",
+        aka: "Virtual Memory Manager · PyTorch Caching Allocator",
+        scores: { SPD: 1, MEM: 3, EAS: 2, MAT: 2 },
+        tags: [["orange","Memory"],["pink","Research"]],
+        links: { paper: "https://arxiv.org/abs/2401.08156", repo: "https://github.com/intelligent-machine-learning/glake" },
+        body: "Uses virtual memory mapping at the GPU level to provide a contiguous virtual address space over physically fragmented memory. This avoids OOM errors that occur when total free memory is sufficient but no single contiguous block is large enough.",
+        detail: "GPU memory fragmentation becomes significant in complex training setups with dynamic tensor sizes (e.g., variable sequence lengths, MoE routing, dynamic batching). Traditional caching allocators (PyTorch's CUDACachingAllocator) use heuristics to coalesce free blocks, but VMM-based approaches operate at the page table level for guaranteed defragmentation. The approach is transparent to user code but requires CUDA VMM APIs (CUDA 10.2+). Still emerging as a production technique."
+      }
+    ]
+  },
+  {
+    name: "Communication Optimizations",
+    desc: "Reduce the time spent on gradient synchronization, parameter broadcasting, and collective operations.",
+    methods: [
+      {
+        title: "Topology-Aware Collective Algorithms",
+        aka: "Hierarchical All-Reduce · 2D-Ring · Tree All-Reduce",
+        scores: { SPD: 4, MEM: 1, EAS: 3, MAT: 3 },
+        tags: [["blue","Communication"],["green","Production"]],
+        links: { repo: "https://github.com/NVIDIA/nccl" },
+        body: "Match the collective algorithm to the physical network topology. Instead of a flat ring All-Reduce, use a hierarchical approach: reduce within NVLink domains first (fast), then across nodes via InfiniBand (slower), then broadcast back.",
+        detail: "A flat ring All-Reduce on 256 GPUs (32 nodes × 8 GPUs) sends data over slow inter-node links 255 times. A hierarchical 2-level approach: (1) intra-node ring over NVLink (7 steps at 600 GB/s), (2) inter-node ring over IB (31 steps at 200 Gbps), (3) intra-node broadcast. This can achieve 20–40% speedup on the collective by keeping most traffic on the fastest links. NCCL implements topology detection and algorithm selection automatically for common topologies."
+      },
+      {
+        title: "Decomposition-Based Comm Scheduling",
+        aka: "Overlapped Communication · Gradient Bucketing · Computation-Communication Overlap",
+        scores: { SPD: 4, MEM: 1, EAS: 3, MAT: 3 },
+        tags: [["blue","Communication"],["green","Production"]],
+        links: { docs: "https://docs.pytorch.org/docs/stable/notes/ddp.html" },
+        body: "Break large collective operations into smaller chunks and overlap them with computation. For example, start All-Reduce on the first gradient bucket while backward pass is still computing later layers.",
+        detail: "PyTorch DDP's gradient bucketing is a basic form: gradients are grouped into ~25 MB buckets and All-Reduce starts as each bucket fills. More advanced decomposition overlaps All-Gather (for FSDP) with forward computation, or Reduce-Scatter with backward. Megatron-LM's scatter-gather optimization for TP overlaps communication for one micro-batch with computation of the next. The theoretical limit is full overlap (communication completely hidden), but real-world gains are 20–40% reduction in communication-exposed time."
+      },
+      {
+        title: "InfiniBand SHARP (In-Network Aggregation)",
+        aka: "SHARP · Scalable Hierarchical Aggregation and Reduction Protocol",
+        scores: { SPD: 4, MEM: 1, EAS: 3, MAT: 4 },
+        tags: [["blue","Communication"],["green","Production"]],
+        links: { docs: "https://docs.nvidia.com/networking/display/shaborev300" },
+        body: "Performs reduction operations (sum, max) inside the InfiniBand switch network itself, so data is aggregated as it traverses the switch fabric rather than at endpoint GPUs. This effectively doubles All-Reduce bandwidth by eliminating the reduction phase from endpoints.",
+        detail: "In a standard All-Reduce, each GPU sends and receives N bytes. With SHARP, each GPU sends N bytes and receives N/P bytes from the switch tree — the switch handles aggregation. This roughly halves All-Reduce latency for large messages. Requires Mellanox/NVIDIA InfiniBand switches with SHARP support (ConnectX-6+, Quantum switches). Available on many HPC clusters and cloud IB instances. The main limitation is that SHARP resources are shared across jobs, so multi-tenant environments may see contention."
+      }
+    ]
+  },
+  {
+    name: "Fault Tolerance",
+    desc: "Detect, recover from, and prevent failures during multi-week training runs across thousands of GPUs.",
+    methods: [
+      {
+        title: "Persistent Checkpointing",
+        aka: "Distributed Checkpointing · Tectonic · HDFS Checkpoints",
+        scores: { SPD: 2, MEM: 1, EAS: 4, MAT: 5 },
+        tags: [["pink","Reliability"],["green","Production"]],
+        links: { paper: "https://arxiv.org/abs/2406.10707" },
+        body: "Periodically save full training state (model parameters, optimizer state, RNG state, data loader position) to a distributed file system. On failure, roll back to the latest checkpoint and resume. Checkpoint size for a 70B model is ~980 GB.",
+        detail: "The universal fault tolerance mechanism. The main cost is I/O time: writing 980 GB to a parallel file system takes 30–120 seconds depending on bandwidth, during which training stalls. Checkpointing every 10–30 minutes is typical, meaning 1–5% of training time is spent on checkpoints. Meta's Tectonic file system is optimized for this pattern, supporting thousands of concurrent writers. Async checkpointing (writing in background) can reduce the stall to near-zero but requires 2× parameter memory temporarily. Every production training system uses this as the baseline recovery mechanism."
+      },
+      {
+        title: "In-Memory Checkpointing",
+        aka: "In-Memory Redundancy · DCheckpoint",
+        scores: { SPD: 4, MEM: -1, EAS: 3, MAT: 3 },
+        tags: [["pink","Reliability"],["orange","Memory"]],
+        links: { paper: "https://arxiv.org/abs/2501.01792" },
+        body: "Store checkpoint replicas in the GPU/CPU memory of peer nodes instead of writing to remote storage. On failure, the surviving nodes provide the checkpoint data for recovery, avoiding the I/O bottleneck entirely.",
+        detail: "Recovery time drops from minutes (storage I/O) to seconds (memory copy). The tradeoff is memory: storing one extra checkpoint replica costs ~14 GB per billion parameters (FP32 optimizer state). For a 70B model, that's ~980 GB distributed across the cluster — significant but feasible at scale. The approach also assumes that failures don't take out the replica simultaneously (e.g., not on the same node or same power domain). Pairs well with persistent checkpointing: in-memory for fast recovery from common single-node failures, persistent for catastrophic failures."
+      },
+      {
+        title: "Proactive Anomaly Detection",
+        aka: "Health Monitoring · Predictive Failure Detection",
+        scores: { SPD: 2, MEM: 1, EAS: 3, MAT: 3 },
+        tags: [["pink","Reliability"]],
+        links: { paper: "https://arxiv.org/abs/2504.11623" },
+        body: "Continuously monitor GPU temperatures, ECC errors, NVLink CRC errors, network packet drops, and training loss curves to predict failures before they happen. Proactively migrate work away from unhealthy nodes.",
+        detail: "At Meta's 24K-GPU scale, hardware failures occur multiple times per day. Detecting a failing GPU before it crashes (via rising ECC error rates or abnormal temperatures) allows preemptive checkpointing and migration, avoiding the full cost of a crash-and-restart cycle. Training loss spikes can indicate silent data corruption (bit flips in HBM). The challenge is distinguishing true anomalies from normal variance. Production systems combine rule-based thresholds with statistical models. Reduces effective downtime by 30–50% compared to reactive-only approaches."
+      }
+    ]
+  }
+];
+
+// ── Helper: slugify ─────────────────────────────────────────────────────
+function slug(str) { return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
+
+// ── Build TOC ───────────────────────────────────────────────────────────
+const toc = document.getElementById('toc');
+categories.forEach(cat => {
+  const catSlug = slug(cat.name);
+  const div = document.createElement('div');
+  div.className = 'toc-category';
+  div.innerHTML = `<a href="#${catSlug}">${cat.name}</a>`;
+  const methods = document.createElement('div');
+  methods.className = 'toc-methods';
+  cat.methods.forEach(m => {
+    const mSlug = slug(m.title);
+    const a = document.createElement('a');
+    a.href = '#' + mSlug;
+    a.textContent = m.title;
+    methods.appendChild(a);
+  });
+  div.appendChild(methods);
+  toc.appendChild(div);
+});
+
+// ── Build DOM ────────────────────────────────────────────────────────────
+const app = document.getElementById('app');
+const chartInstances = [];
+
+categories.forEach(cat => {
+  const catSlug = slug(cat.name);
+  const hdr = document.createElement('div');
+  hdr.className = 'category';
+  hdr.id = catSlug;
+  hdr.textContent = cat.name;
+  app.appendChild(hdr);
+  const desc = document.createElement('div');
+  desc.className = 'category-desc';
+  desc.textContent = cat.desc;
+  app.appendChild(desc);
+
+  cat.methods.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = slug(m.title);
+
+    // Composite = sum of all four (higher = better across all axes), max = 20
+    const spd = m.scores.SPD < 0 ? 0 : m.scores.SPD;
+    const mem = m.scores.MEM < 0 ? 0 : m.scores.MEM;
+    const composite = spd + mem + m.scores.EAS + m.scores.MAT;
+    const maxComposite = 20;
+
+    const linksHtml = m.links ? Object.entries(m.links)
+      .filter(([,url]) => url)
+      .map(([type, url]) => {
+        const label = type === 'paper' ? 'Paper' : type === 'repo' ? 'GitHub' : 'Docs';
+        return `<a class="${type}" href="${url}" target="_blank" rel="noopener">${ICONS[type]}${label}</a>`;
+      }).join('') : '';
+
+    card.innerHTML = `
+      <div class="text-col">
+        <h3>${m.title}</h3>
+        <div class="aka">${m.aka}</div>
+        <p>${m.body}</p>
+        <p class="detail">${m.detail}</p>
+        <div class="tags">${m.tags.map(t => `<span class="tag ${t[0]}">${t[1]}</span>`).join('')}</div>
+        ${linksHtml ? `<div class="ref-links">${linksHtml}</div>` : ''}
+        <div class="score-badges">
+          <div class="badge spd">SPD ${m.scores.SPD}</div>
+          <div class="badge mem">MEM ${m.scores.MEM}</div>
+          <div class="badge eas">EAS ${m.scores.EAS}</div>
+          <div class="badge mat">MAT ${m.scores.MAT}</div>
+        </div>
+        <div class="composite-row">
+          Composite ROI: <strong>${composite}</strong> / ${maxComposite}
+          <div class="bar-track"><div class="bar-fill" style="width:${(composite/maxComposite)*100}%"></div></div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas></canvas></div>
+    `;
+    app.appendChild(card);
+
+    const canvas = card.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    const displaySPD = Math.max(m.scores.SPD, 0);
+    const displayMEM = Math.max(m.scores.MEM, 0);
+
+    chartInstances.push(new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['SPD', 'MEM', 'EAS', 'MAT'],
+        datasets: [{
+          data: [displaySPD, displayMEM, m.scores.EAS, m.scores.MAT],
+          backgroundColor: 'rgba(108,140,255,0.15)',
+          borderColor: 'rgba(108,140,255,0.8)',
+          borderWidth: 2,
+          pointBackgroundColor: ['#6c8cff','#4edba1','#ffb86c','#ff6caa'],
+          pointBorderColor: ['#6c8cff','#4edba1','#ffb86c','#ff6caa'],
+          pointRadius: 5,
+          pointHoverRadius: 7,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            min: 0,
+            max: 5,
+            ticks: { stepSize: 1, display: false },
+            grid: { color: 'rgba(255,255,255,0.08)' },
+            angleLines: { color: 'rgba(255,255,255,0.08)' },
+            pointLabels: {
+              color: ['#6c8cff','#4edba1','#ffb86c','#ff6caa'],
+              font: { size: 12, weight: '700' },
+            }
+          }
+        }
+      }
+    }));
+  });
+});
+</script>
+</body>
+</html>
