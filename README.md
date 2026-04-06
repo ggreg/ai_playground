@@ -179,6 +179,23 @@ Work through [docs/PERFORMANCE_EXERCISES.md](docs/PERFORMANCE_EXERCISES.md) — 
 
 Each exercise includes a scenario, runnable code, questions, and expandable hints.
 
+### Tracking Progress
+
+To set up a private progress tracker:
+
+```bash
+cp docs/PROGRESS_TEMPLATE.md PROGRESS.md
+```
+
+`PROGRESS.md` is gitignored — it stays local and won't be pushed. It includes:
+
+- **18-day plan** with daily checklists scoped to 30-minute sessions
+- **Daily log** for notes on what clicked and what to revisit
+- **Cloud cost tracker** to monitor GPU spend
+- **Key numbers table** to record your own measurements across model configs
+
+The daily routine: open `PROGRESS.md`, find today's checklist, set a 30-minute timer, do the work, log what you learned.
+
 ### The Learning Loop
 
 For each topic: **read the code, form a hypothesis, run an experiment, verify.** For example: "GQA with 4 KV heads should use ~3x less KV cache memory than MHA with 12 heads" — then write a script to measure it and see if you're right.
