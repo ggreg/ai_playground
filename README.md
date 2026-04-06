@@ -163,6 +163,22 @@ Follow [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md) to rent a cloud GPU, then:
 - Train `medium.yaml` across multiple GPUs with DDP and FSDP
 - Compare MFU between setups using `profiling/flops.py`
 
+### Phase 5: Debug Performance
+
+Work through [docs/PERFORMANCE_EXERCISES.md](docs/PERFORMANCE_EXERCISES.md) — 10 exercises covering:
+
+- Memory debugging (where did my VRAM go?)
+- GPU utilization vs MFU (is the GPU actually working?)
+- Quantization quality–speed tradeoffs
+- Attention compute scaling (is it really O(n^2)?)
+- DDP vs FSDP memory math
+- Decode memory-boundedness
+- torch.compile warmup traps
+- Data loading bottlenecks
+- Systematic profile-guided optimization workflow
+
+Each exercise includes a scenario, runnable code, questions, and expandable hints.
+
 ### The Learning Loop
 
 For each topic: **read the code, form a hypothesis, run an experiment, verify.** For example: "GQA with 4 KV heads should use ~3x less KV cache memory than MHA with 12 heads" — then write a script to measure it and see if you're right.
