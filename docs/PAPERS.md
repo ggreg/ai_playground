@@ -62,9 +62,17 @@ Papers referenced throughout this codebase, organized by topic. Each entry inclu
 
 ## Training Optimization
 
+- **Adam: A Method for Stochastic Optimization** (Kingma & Ba, 2015)
+  Adaptive optimizer that tracks per-parameter first and second moments of gradients. The foundation for AdamW. Bias correction handles the zero-initialization of moment estimates. Our `optimizers.py` builds this step by step.
+  [Paper](https://arxiv.org/abs/1412.6980)
+
 - **Decoupled Weight Decay Regularization** (Loshchilov & Hutter, 2019)
   AdamW: fixes Adam's weight decay by decoupling it from the gradient update. Standard optimizer for transformer training. Our `optimizers.py` implements this from scratch for educational purposes.
   [Paper](https://arxiv.org/abs/1711.05101) · [Docs](https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html)
+
+- **SGDR: Stochastic Gradient Descent with Warm Restarts** (Loshchilov & Hutter, 2017)
+  Introduces cosine annealing for learning rate scheduling. The cosine schedule spends more time at moderate LRs and decays smoothly, which consistently outperforms step decay. Our `trainer.py` uses cosine annealing with linear warmup.
+  [Paper](https://arxiv.org/abs/1608.03983)
 
 - **Mixed Precision Training** (Micikevicius et al., 2018)
   Train with FP16 computation and FP32 master weights to get ~2x speedup with minimal quality loss. Introduces loss scaling to prevent gradient underflow in FP16. BF16 (used in this repo) simplifies this by having the same exponent range as FP32, eliminating the need for loss scaling.
