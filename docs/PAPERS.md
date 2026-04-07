@@ -2,6 +2,12 @@
 
 Papers referenced throughout this codebase, organized by topic. Each entry includes a summary, links to the paper, official code, and documentation where available.
 
+## Tokenization
+
+- **Neural Machine Translation of Rare Words with Subword Units** (Sennrich et al., 2016)
+  Introduces Byte Pair Encoding (BPE) for NLP: start with characters, repeatedly merge the most frequent adjacent pair until you reach the desired vocabulary size. This determines `vocab_size` in the model config. Larger vocab = shorter sequences (faster attention) but bigger embedding table. Used by GPT-2, LLaMA (via sentencepiece), and most modern LLMs.
+  [Paper](https://arxiv.org/abs/1508.07909)
+
 ## Transformer Architecture
 
 - **Attention Is All You Need** (Vaswani et al., 2017)

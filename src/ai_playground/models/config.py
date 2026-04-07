@@ -5,6 +5,13 @@ from dataclasses import dataclass
 
 @dataclass
 class TransformerConfig:
+    # vocab_size is determined by the tokenizer, not the model. A tokenizer
+    # (typically BPE — https://arxiv.org/abs/1508.07909) splits text into subword
+    # pieces and assigns each an integer ID. vocab_size is how many such pieces exist.
+    # Larger vocab = fewer tokens per text (faster) but bigger embedding table.
+    # 32000 matches LLaMA 1's sentencepiece tokenizer; set this to match whatever
+    # tokenizer you use. The model only needs the number to size the embedding
+    # table (vocab_size × dim) and output head.
     vocab_size: int = 32000
     dim: int = 512
     n_layers: int = 8
