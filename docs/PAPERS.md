@@ -22,6 +22,24 @@ Papers referenced throughout this codebase, organized by topic. Each entry inclu
   Introduces Grouped-Query Attention (GQA) to the LLaMA architecture for faster inference. Also covers RLHF for chat fine-tuning. Our `n_kv_heads` parameter comes directly from this work.
   [Paper](https://arxiv.org/abs/2307.09288) · [Code](https://github.com/meta-llama/llama) · [Docs](https://llama.meta.com/)
 
+## Mixture of Experts
+
+- **Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer** (Shazeer et al., 2017)
+  The original MoE paper for deep learning: replaces the FFN with N expert FFNs and a learned gating network that selects top-k experts per token. Showed that MoE can scale to 137B parameters with sublinear compute cost.
+  [Paper](https://arxiv.org/abs/1701.06538)
+
+- **Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity** (Fedus et al., 2022)
+  Simplifies MoE by routing to a single expert (top-1) per token. Introduces the auxiliary load balancing loss to prevent expert collapse. Scaled to 1.6T parameters. Our MoE notebook implements this balancing loss.
+  [Paper](https://arxiv.org/abs/2101.03961) · [Code](https://github.com/google-research/t5x)
+
+- **Mixtral of Experts** (Jiang et al., 2024)
+  Mixtral 8x7B: 8 expert FFNs with top-2 routing per layer. 47B total params but only 13B active per token. Matches or beats LLaMA 2 70B while being 6x faster at inference. The most influential open-source MoE model.
+  [Paper](https://arxiv.org/abs/2401.04088) · [Code](https://github.com/mistralai/mistral-inference)
+
+- **DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model** (DeepSeek-AI, 2024)
+  Pushes MoE further with 160 fine-grained experts and top-6 routing. 236B total params, 21B active. Introduces DeepSeekMoE architecture with shared experts alongside routed experts.
+  [Paper](https://arxiv.org/abs/2405.04434) · [Code](https://github.com/deepseek-ai/DeepSeek-V2)
+
 ## Attention Variants
 
 - **Fast Transformer Decoding: One Write-Head is All You Need** (Shazeer, 2019)
