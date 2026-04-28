@@ -50,6 +50,11 @@ uv run python scripts/benchmark.py --config configs/tiny.yaml
 - `memory.py` — `MemoryTracker`, `track_memory` context manager
 - `nsight.py` — NVTX range markers, PyTorch profiler wrapper
 
+**Documentation** in `docs/`:
+- `LEARNING_PATH.md` — 5-phase curriculum from internals to GPU tools
+- `PAPERS.md` — Key papers organized by topic with links and summaries
+- `CONCEPTS.md` — FAQ-style deep dives on conceptual questions (embeddings, cross-entropy, bias, etc.). When the user asks a substantive conceptual question that would benefit future readers, add the answer here following the existing Q&A format.
+
 ## Code Conventions
 
 - **Python 3.11+** with type hints (use `X | None` not `Optional[X]`)

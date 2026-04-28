@@ -200,7 +200,7 @@ The daily routine: open `PROGRESS.md`, find today's checklist, set a 30-minute t
 
 For each topic: **read the code, form a hypothesis, run an experiment, verify.** For example: "GQA with 4 KV heads should use ~3x less KV cache memory than MHA with 12 heads" — then write a script to measure it and see if you're right.
 
-See [docs/LEARNING_PATH.md](docs/LEARNING_PATH.md) for the full topic-by-topic sequence.
+See [docs/LEARNING_PATH.md](docs/LEARNING_PATH.md) for the full topic-by-topic sequence and [docs/CONCEPTS.md](docs/CONCEPTS.md) for in-depth answers to recurring conceptual questions (embeddings, cross-entropy, bias, etc.).
 
 ## Project Structure
 
