@@ -143,3 +143,25 @@ Papers referenced throughout this codebase, organized by topic. Each entry inclu
 - **LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale** (Dettmers et al., 2022)
   Discovers that transformer weights have emergent outlier features (a few dimensions with values 10-100x larger than the rest). Handles them via mixed decomposition: outlier dimensions stay in FP16, the rest use INT8. Enables inference of 175B models on a single server with no quality loss.
   [Paper](https://arxiv.org/abs/2208.07339) · [Code](https://github.com/TimDettmers/bitsandbytes) · [Docs](https://huggingface.co/docs/bitsandbytes/)
+
+## GPU Kernels & Performance
+
+- **Beating cuBLAS in Single-Precision General Matrix Multiplication** (Salykova, 2024)
+  Step-by-step walkthrough of writing an SGEMM kernel for the RTX 3090 (Ampere) that matches or beats cuBLAS. Develops two kernels — `128x128x8` and `128x256x8` — using hierarchical tiling (block / warp / thread), 8x8 register accumulators, double-buffered shared memory padded to 132 floats to avoid bank conflicts, vectorized `ld.shared.v4.f32` / `st.shared.v4.f32`, and `cp.async.ca.shared.global` for direct global→shared transfers on Ampere+. The companion notebook in `notebooks/05_gpu_nvidia_tools/02_sgemm_optimization.ipynb` reproduces this progression.
+  [Article](https://salykova.github.io/sgemm-gpu) · [Code](https://github.com/salykova/sgemm.cu)
+
+- **How to Optimize a CUDA Matmul Kernel for cuBLAS-like Performance** (Boehm, 2022)
+  The other classic SGEMM optimization tutorial. Walks from a naive kernel (~250 GFLOPS) through 10 progressively faster versions on an A6000, ending at ~93% of cuBLAS. Covers global memory coalescing, shared memory blocking, 1D and 2D thread tiling, vectorized loads, and warp tiling. The complementary read to Salykova for understanding *why* each step matters before Salykova's article shows how to push further with `cp.async`.
+  [Article](https://siboehm.com/articles/22/CUDA-MMM) · [Code](https://github.com/siboehm/SGEMM_CUDA)
+
+- **CUTLASS: CUDA Templates for Linear Algebra Subroutines** (NVIDIA, 2017–)
+  NVIDIA's open-source template library implementing the same hierarchical-decomposition GEMM strategy used inside cuBLAS, parameterized over data types, tile sizes, layouts, and instruction sets (FMA, mma.sync tensor cores, Hopper WGMMA, TMA). Reading CUTLASS is the natural next step after writing SGEMM by hand — it shows the production-grade form of the same ideas plus tensor cores, software pipelining, and asynchronous warp-specialized kernels.
+  [Code](https://github.com/NVIDIA/cutlass) · [Docs](https://docs.nvidia.com/cutlass/) · [GTC talk](https://www.nvidia.com/en-us/on-demand/session/gtcspring22-s41996/)
+
+- **Dissecting the NVIDIA Volta GPU Architecture via Microbenchmarking** (Jia et al., 2018)
+  Reverse-engineers SM partitioning, shared memory bank structure, register file bandwidth, and instruction latencies on Volta. The numbers carry over with adjustments to Turing/Ampere/Ada. Useful when reasoning about why a kernel achieves the throughput it does — most performance ceilings come from one of the limits this paper measures.
+  [Paper](https://arxiv.org/abs/1804.06826)
+
+- **Programmatic Dependent Launch and Async Copy on Ampere** (NVIDIA Programming Guide)
+  The `cp.async.ca.shared.global` instruction (Ampere SM_80+) lets a thread asynchronously copy from global memory directly into shared memory, bypassing the register file and freeing the SM to run independent compute while the load completes. Combined with `cp.async.commit_group` / `cp.async.wait_group`, this is what makes software pipelining of GEMM tiles practical without occupying registers as a load buffer. Salykova's `128x256x8` kernel relies on this.
+  [Async copy docs](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async) · [PTX guide](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-copy)
