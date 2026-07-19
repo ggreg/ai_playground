@@ -4,8 +4,17 @@ $primary: #9085e9;
 $link-color: #9085e9;
 $code-block-bg: #1e1e24;
 $code-block-border-left: #9085e9;
+$code-block-border-left-size: 3px;
 
 /*-- scss:rules --*/
+// Quarto 1.8 leaks light-theme SCSS defaults into the dark compile, so the
+// code-block surface is forced here as a scoped rule instead of a variable
+body.quarto-dark div.sourceCode {
+  background-color: #1e1e24;
+  border: none;
+  border-left: 3px solid #9085e9;
+}
+
 // Light-surface figures on a dark page: keep the light surface (a static PNG
 // can't follow the theme) and give it a hairline ring so it sits cleanly
 .cell-output-display img {
@@ -15,4 +24,6 @@ $code-block-border-left: #9085e9;
 p code:not(.sourceCode),
 li code:not(.sourceCode) {
   background: rgba(144, 133, 233, 0.12);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
 }

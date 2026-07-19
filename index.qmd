@@ -23,6 +23,8 @@ Interactive notebooks, rendered here for reading — clone the repo to run them 
 | Training Optimization | Mixed precision, gradient accumulation, LR schedules, AdamW from scratch |
 | GPU & NVIDIA Tools | CUDA SGEMM optimization with five progressive kernels |
 
+📍 The map at the top of each page tracks your reading progress — visited pages fill in, and the pulsing dot marks where you are. Progress is stored locally in your browser.
+
 ## Running locally
 
 ```bash

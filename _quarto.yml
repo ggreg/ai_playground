@@ -74,9 +74,10 @@ website:
 format:
   html:
     theme:
-      light: [cosmo, theme.scss]
+      light: [cosmo, theme.scss, theme-light.scss]
       dark: [darkly, theme.scss, theme-dark.scss]
     toc: true
+    include-after-body: assets/progress-map.html
     code-copy: true
     code-fold: show
     code-overflow: wrap
