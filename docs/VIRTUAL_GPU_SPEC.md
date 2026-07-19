@@ -1,6 +1,7 @@
 # Virtual GPU — Design Spec
 
-Status: **draft, not started**. Extends `src/ai_playground/gpusim/` (the pure-Python SIMT
+Status: **Phase 1 implemented** (`gpusim/spec.py`, `gpusim/occupancy.py`, `tests/test_vgpu.py`);
+hardware verification on a live Colab T4 still pending, Phases 2–4 not started. Extends `src/ai_playground/gpusim/` (the pure-Python SIMT
 simulator, see `notebooks/05_gpu_nvidia_tools/01b_simt_simulator.ipynb`) with a
 **cycle-approximate timing model of a real GPU** and a **graphical view of the machine
 executing a kernel**.
@@ -182,7 +183,7 @@ more than a tuned one.
 
 | Phase | Deliverable | Size | Definition of done |
 |---|---|---|---|
-| 1 | `spec.py` + `occupancy.py` | ~150 lines | matches CUDA occupancy API on 10 configs (verified on Colab); standalone useful |
+| 1 | `spec.py` + `occupancy.py` — **done** (12 tests, hand-derived expectations) | ~150 lines | matches CUDA occupancy API on 10 configs (Colab verification still open); standalone useful |
 | 2 | `timing.py` + `trace.py` | ~400 lines | vector-add and tiled-matmul traces pass validation table; Chrome trace opens in Perfetto |
 | 3 | `render.py` + notebook `01c_virtual_gpu.ipynb` | ~250 lines + chapter | floorplan animation + waterfall on site; occupancy sweep story; real-T4 comparison cells |
 | 4 (stretch) | interactive HTML trace player | — | artifact prototype first; only then a site page |

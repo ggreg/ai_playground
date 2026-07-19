@@ -24,9 +24,18 @@ from .memory import (
     coalescing_report,
     total_transactions,
 )
+from .occupancy import Occupancy, occupancy, occupancy_sweep
+from .spec import SPECS, A100_40GB, T4, GPUSpec
 from .viz import plot_warp_accesses
 
 __all__ = [
+    "SPECS",
+    "A100_40GB",
+    "T4",
+    "GPUSpec",
+    "Occupancy",
+    "occupancy",
+    "occupancy_sweep",
     "WARP_SIZE",
     "BarrierDivergenceError",
     "Ctx",
