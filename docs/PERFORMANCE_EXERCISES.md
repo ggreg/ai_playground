@@ -269,7 +269,9 @@ for step in range(1000):
 
 **Scenario:** Training runs, the GPU shows 95% utilization, but it still feels slow. You want to know if you're actually using the GPU's compute capacity efficiently.
 
-> 📺 [How CUDA Programming Works (Stephen Jones, GTC 2022)](https://www.youtube.com/watch?v=QQceTDjA4f4) explains why "utilization" and "doing useful FLOPs" are different things — the hardware background for this exercise.
+::: {.callout-tip}
+📺 [How CUDA Programming Works (Stephen Jones, GTC 2022)](https://www.youtube.com/watch?v=QQceTDjA4f4) explains why "utilization" and "doing useful FLOPs" are different things — the hardware background for this exercise.
+:::
 
 **Task:** Compute MFU for your training run and identify what's leaving performance on the table.
 

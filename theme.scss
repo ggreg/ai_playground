@@ -1,0 +1,45 @@
+/*-- scss:defaults --*/
+// Accent: violet from the plot palette, so site chrome and figures share a family
+$primary: #4a3aa7;
+$font-family-sans-serif: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+$font-family-monospace: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+$headings-font-weight: 700;
+$link-decoration: none;
+$code-block-bg: #f6f6f4;
+$code-block-border-left: #4a3aa7;
+$code-block-border-left-size: 3px;
+
+/*-- scss:rules --*/
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap");
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.015em;
+}
+
+h2 {
+  border-bottom: none;
+  margin-top: 2rem;
+}
+
+// Figures keep their light surface on every page; soften the edges so the
+// PNG rectangle reads as intentional rather than pasted-in
+.cell-output-display img {
+  background: #fcfcfb;
+  border-radius: 8px;
+  padding: 6px;
+  max-width: 100%;
+}
+
+// Slightly quieter inline code
+p code:not(.sourceCode),
+li code:not(.sourceCode) {
+  background: rgba(74, 58, 167, 0.06);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+}
+
+.sidebar-item .sidebar-item-container .active {
+  font-weight: 600;
+}

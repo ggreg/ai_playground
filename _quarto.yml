@@ -74,9 +74,10 @@ website:
 format:
   html:
     theme:
-      light: cosmo
-      dark: darkly
+      light: [cosmo, theme.scss]
+      dark: [darkly, theme.scss, theme-dark.scss]
     toc: true
     code-copy: true
+    code-fold: show
     code-overflow: wrap
     highlight-style: github

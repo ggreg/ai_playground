@@ -1,0 +1,18 @@
+/*-- scss:defaults --*/
+// Lighter accent step of the same violet, for contrast on the dark surface
+$primary: #9085e9;
+$link-color: #9085e9;
+$code-block-bg: #1e1e24;
+$code-block-border-left: #9085e9;
+
+/*-- scss:rules --*/
+// Light-surface figures on a dark page: keep the light surface (a static PNG
+// can't follow the theme) and give it a hairline ring so it sits cleanly
+.cell-output-display img {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+p code:not(.sourceCode),
+li code:not(.sourceCode) {
+  background: rgba(144, 133, 233, 0.12);
+}
