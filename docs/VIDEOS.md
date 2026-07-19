@@ -55,7 +55,7 @@ Curated videos matched to this repo's modules. Watching one before working throu
 ## GPU & NVIDIA Tools (`notebooks/05_gpu_nvidia_tools/`)
 
 - **How CUDA Programming Works** (Stephen Jones, GTC 2022)
-  A CUDA architect explains the hardware truths behind the programming model: memory bandwidth as the real constraint, warps, occupancy. The mental model behind our SGEMM notebook's roofline analysis.
+  A CUDA architect explains the hardware truths behind the programming model: memory bandwidth as the real constraint, warps, occupancy. Pairs with `01_cuda_basics.ipynb`, and is the mental model behind the SGEMM notebook's roofline analysis.
   [Watch](https://www.youtube.com/watch?v=QQceTDjA4f4)
 
 - **Flash Attention derived and coded from first principles with Triton** (Umar Jamil)
