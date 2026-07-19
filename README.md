@@ -2,6 +2,8 @@
 
 A hands-on playground for experimenting with LLM internals, training optimization, distributed systems, and GPU performance. Built around a clean, from-scratch LLaMA-style transformer implementation.
 
+**📖 Read it online:** [greg.0x80.net/ai_playground](https://greg.0x80.net/ai_playground/) — all docs and notebooks rendered as a website, with an *Open in Colab* badge on every notebook so you can run the code without cloning anything.
+
 ## What's Inside
 
 ### Core Model (`src/ai_playground/models/`)
@@ -40,7 +42,7 @@ A modern decoder-only transformer with all the components used in production LLM
 
 ### Notebooks (`notebooks/`)
 
-Interactive Jupyter notebooks organized by topic:
+Interactive Jupyter notebooks organized by topic. Read them [on the website](https://greg.0x80.net/ai_playground/) with all outputs and plots, or run them yourself — locally or in Colab via the badge at the top of each notebook (the CUDA notebooks run on Colab's free T4 GPU):
 
 | Module | Topics |
 |--------|--------|
@@ -214,5 +216,8 @@ ai-playground/
 ├── notebooks/               # Jupyter notebooks (5 topic modules)
 ├── scripts/                 # CLI entry points (train, benchmark, profile)
 ├── configs/                 # YAML model/training configs
-└── tests/                   # pytest test suite
+├── tests/                   # pytest test suite
+├── docs/                    # Guides (learning path, concepts, papers, exercises)
+└── _quarto.yml              # Website config — docs + notebooks published to
+                             # GitHub Pages on every push to main
 ```
