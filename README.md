@@ -40,6 +40,12 @@ A modern decoder-only transformer with all the components used in production LLM
 - Nsight Systems/Compute integration helpers
 - PyTorch profiler wrapper (outputs Chrome traces)
 
+### GPU Simulator (`src/ai_playground/gpusim/`)
+
+- Pure-Python SIMT simulator: runs CUDA-style kernels (grid/block/thread indexing, shared memory, `syncthreads` barriers) on NumPy — no GPU, no compiler, works even under Pyodide
+- Logs every memory access; counts coalescing transactions (128B segments per warp) and shared-memory bank conflicts, with per-warp access-pattern plots
+- Catches barrier divergence as an error instead of a hang
+
 ### Notebooks (`notebooks/`)
 
 Interactive Jupyter notebooks organized by topic. Read them [on the website](https://greg.0x80.net/ai_playground/) with all outputs and plots, or run them yourself — locally or in Colab via the badge at the top of each notebook (the CUDA notebooks run on Colab's free T4 GPU):

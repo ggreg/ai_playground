@@ -70,6 +70,8 @@ website:
         contents:
           - href: notebooks/05_gpu_nvidia_tools/01_cuda_basics.ipynb
             text: CUDA Basics
+          - href: notebooks/05_gpu_nvidia_tools/01b_simt_simulator.ipynb
+            text: SIMT Simulator
           - href: notebooks/05_gpu_nvidia_tools/02_sgemm_optimization.ipynb
             text: SGEMM Optimization
 
