@@ -1,0 +1,32 @@
+# AI Playground
+
+A hands-on playground for experimenting with LLM internals, training optimization, distributed systems, and GPU performance. Built around a clean, from-scratch LLaMA-style transformer implementation.
+
+Source code lives at [github.com/ggreg/ai_playground](https://github.com/ggreg/ai_playground).
+
+## Start here
+
+- **[Learning Path](LEARNING_PATH.md)** — the 5-phase curriculum from transformer internals to GPU tools
+- **[Concepts FAQ](CONCEPTS.md)** — deep dives on embeddings, cross-entropy, bias, and other conceptual questions
+- **[Papers](PAPERS.md)** — key papers organized by topic with summaries
+
+## Notebooks
+
+Interactive notebooks, rendered here for reading — clone the repo to run them yourself:
+
+| Module | Topics |
+|--------|--------|
+| Transformer Internals | Attention (MHA/GQA/MQA), MoE, RoPE, RMSNorm, SwiGLU |
+| Training Optimization | Mixed precision, gradient accumulation, LR schedules, AdamW from scratch |
+| GPU & NVIDIA Tools | CUDA SGEMM optimization with five progressive kernels |
+
+## Running locally
+
+```bash
+git clone https://github.com/ggreg/ai_playground.git
+cd ai_playground
+uv sync --extra dev
+
+# Quick training sanity check (CPU/MPS, ~30 seconds)
+uv run python scripts/train.py --config configs/tiny.yaml --max-steps 20
+```

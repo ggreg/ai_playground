@@ -15,3 +15,6 @@ wandb/
 data/
 checkpoints/
 PROGRESS.md
+
+# MkDocs build output
+site/
