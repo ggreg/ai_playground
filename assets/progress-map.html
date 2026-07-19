@@ -2,76 +2,154 @@
   .aipg-map {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.7rem 1.4rem;
+    gap: 0.8rem 1.6rem;
     align-items: flex-end;
-    padding: 0.65rem 0.95rem;
+    padding: 0.75rem 1rem 0.85rem;
     margin: 0 0 1.5rem;
     border: 1px solid rgba(11, 11, 11, 0.08);
-    border-radius: 10px;
+    border-radius: 12px;
     background: rgba(74, 58, 167, 0.035);
-    font-size: 0.72rem;
     line-height: 1;
   }
   body.quarto-dark .aipg-map {
     border-color: rgba(255, 255, 255, 0.12);
     background: rgba(144, 133, 233, 0.07);
   }
-  .aipg-mod { display: flex; flex-direction: column; gap: 0.35rem; }
-  .aipg-mod-label {
-    color: #898781;
+  .aipg-line { display: flex; flex-direction: column; gap: 0.45rem; }
+  body.quarto-dark .aipg-line { --line: var(--line-dark); }
+  .aipg-line-name {
+    align-self: flex-start;
+    background: var(--line);
+    color: #fff;
+    font-size: 0.58rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 600;
-    font-size: 0.6rem;
+    letter-spacing: 0.07em;
+    padding: 0.22em 0.6em;
+    border-radius: 999px;
     white-space: nowrap;
   }
-  .aipg-dots { display: flex; align-items: center; gap: 0.45rem; }
-  .aipg-dot {
-    width: 11px;
-    height: 11px;
+  /* The track: a thick rounded line running behind the stations */
+  .aipg-track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 2px 3px;
+    min-height: 17px;
+  }
+  .aipg-track::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 6px;
+    margin-top: -3px;
+    border-radius: 3px;
+    background: var(--line);
+  }
+  /* Stations: hollow metro circles; visited fill with the line color */
+  .aipg-station {
+    position: relative;
+    width: 13px;
+    height: 13px;
     border-radius: 50%;
-    border: 2px solid #b6b4ad;
-    background: transparent;
+    border: 3px solid var(--line);
+    background: #fffefb;
     display: inline-block;
     flex: none;
+    box-sizing: border-box;
+    transition: transform 0.15s ease;
   }
-  .aipg-dot:hover { border-color: #4a3aa7; }
-  .aipg-dot.visited { background: #4a3aa7; border-color: #4a3aa7; }
-  .aipg-dot.current { box-shadow: 0 0 0 3px rgba(74, 58, 167, 0.25); animation: aipg-pulse 2s ease-in-out infinite; }
-  body.quarto-dark .aipg-dot { border-color: #6b6a63; }
-  body.quarto-dark .aipg-dot.visited { background: #9085e9; border-color: #9085e9; }
-  body.quarto-dark .aipg-dot:hover { border-color: #9085e9; }
-  body.quarto-dark .aipg-dot.current { box-shadow: 0 0 0 3px rgba(144, 133, 233, 0.3); }
+  .aipg-station:hover { transform: scale(1.35); }
+  .aipg-station.visited { background: var(--line); }
+  body.quarto-dark .aipg-station { background: #1a1a19; }
+  body.quarto-dark .aipg-station.visited { background: var(--line); }
+  .aipg-station.current {
+    width: 17px;
+    height: 17px;
+    background: #fffefb;
+    box-shadow: 0 0 0 3px rgba(255, 254, 251, 0.9), 0 0 0 5px var(--line);
+    animation: aipg-pulse 2s ease-in-out infinite;
+    z-index: 1;
+  }
+  body.quarto-dark .aipg-station.current {
+    background: #1a1a19;
+    box-shadow: 0 0 0 3px rgba(26, 26, 25, 0.9), 0 0 0 5px var(--line);
+  }
   @keyframes aipg-pulse {
-    50% { box-shadow: 0 0 0 5px rgba(74, 58, 167, 0.12); }
+    50% { box-shadow: 0 0 0 3px rgba(255, 254, 251, 0.9), 0 0 0 8px var(--line); }
   }
-  .aipg-here { color: #4a3aa7; font-weight: 700; white-space: nowrap; }
-  body.quarto-dark .aipg-here { color: #9085e9; }
-  .aipg-meta { margin-left: auto; align-self: center; color: #898781; white-space: nowrap; }
+  body.quarto-dark .aipg-station.current { animation-name: aipg-pulse-dark; }
+  @keyframes aipg-pulse-dark {
+    50% { box-shadow: 0 0 0 3px rgba(26, 26, 25, 0.9), 0 0 0 8px var(--line); }
+  }
+  .aipg-here {
+    position: relative;
+    background: var(--line);
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.3em 0.55em;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 1;
+  }
+  .aipg-here::before {
+    content: "";
+    position: absolute;
+    left: -6px;
+    top: 50%;
+    margin-top: -3px;
+    border: 3px solid transparent;
+    border-right-color: var(--line);
+  }
+  .aipg-meta {
+    margin-left: auto;
+    align-self: center;
+    color: #898781;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
   .aipg-meta a { color: #898781; text-decoration: underline; }
 </style>
 <script>
   (function () {
-    // The book, in reading order. Keep in sync with the sidebar in _quarto.yml.
-    const BOOK = [
-      { m: "Start", t: "Home", h: "index.html" },
-      { m: "Guides", t: "Learning Path", h: "docs/LEARNING_PATH.html" },
-      { m: "Guides", t: "Concepts FAQ", h: "docs/CONCEPTS.html" },
-      { m: "Guides", t: "Papers", h: "docs/PAPERS.html" },
-      { m: "Guides", t: "Videos", h: "docs/VIDEOS.html" },
-      { m: "Guides", t: "Performance Exercises", h: "docs/PERFORMANCE_EXERCISES.html" },
-      { m: "Guides", t: "Cloud Setup", h: "docs/CLOUD_SETUP.html" },
-      { m: "Guides", t: "Progress Template", h: "docs/PROGRESS_TEMPLATE.html" },
-      { m: "Transformer Internals", t: "Transformer Overview", h: "notebooks/01_transformer_internals/00_transformer_overview.html" },
-      { m: "Transformer Internals", t: "Attention Mechanisms", h: "notebooks/01_transformer_internals/01_attention_mechanisms.html" },
-      { m: "Transformer Internals", t: "Mixture of Experts", h: "notebooks/01_transformer_internals/02_mixture_of_experts.html" },
-      { m: "Training Optimization", t: "Training From Scratch", h: "notebooks/02_training_optimization/00_training_from_scratch.html" },
-      { m: "Training Optimization", t: "Learning Rate Schedules", h: "notebooks/02_training_optimization/01_learning_rate_schedules.html" },
-      { m: "Training Optimization", t: "Mixed Precision", h: "notebooks/02_training_optimization/02_mixed_precision.html" },
-      { m: "Training Optimization", t: "Gradient Accumulation", h: "notebooks/02_training_optimization/03_gradient_accumulation.html" },
-      { m: "Training Optimization", t: "AdamW From Scratch", h: "notebooks/02_training_optimization/04_adamw_from_scratch.html" },
-      { m: "GPU & NVIDIA Tools", t: "SGEMM Optimization", h: "notebooks/05_gpu_nvidia_tools/02_sgemm_optimization.html" },
+    // Metro lines: one per module, colors from the house plot palette.
+    // Keep stations in sync with the sidebar in _quarto.yml.
+    const LINES = [
+      { name: "Start", color: "#4a3aa7", dark: "#9085e9", stops: [
+        { t: "Home", h: "index.html" },
+      ]},
+      { name: "Guides", color: "#2a78d6", dark: "#3987e5", stops: [
+        { t: "Learning Path", h: "docs/LEARNING_PATH.html" },
+        { t: "Concepts FAQ", h: "docs/CONCEPTS.html" },
+        { t: "Papers", h: "docs/PAPERS.html" },
+        { t: "Videos", h: "docs/VIDEOS.html" },
+        { t: "Performance Exercises", h: "docs/PERFORMANCE_EXERCISES.html" },
+        { t: "Cloud Setup", h: "docs/CLOUD_SETUP.html" },
+        { t: "Progress Template", h: "docs/PROGRESS_TEMPLATE.html" },
+      ]},
+      { name: "Transformer Internals", color: "#008300", dark: "#00a300", stops: [
+        { t: "Transformer Overview", h: "notebooks/01_transformer_internals/00_transformer_overview.html" },
+        { t: "Attention Mechanisms", h: "notebooks/01_transformer_internals/01_attention_mechanisms.html" },
+        { t: "Mixture of Experts", h: "notebooks/01_transformer_internals/02_mixture_of_experts.html" },
+      ]},
+      { name: "Training Optimization", color: "#eb6834", dark: "#d95926", stops: [
+        { t: "Training From Scratch", h: "notebooks/02_training_optimization/00_training_from_scratch.html" },
+        { t: "Learning Rate Schedules", h: "notebooks/02_training_optimization/01_learning_rate_schedules.html" },
+        { t: "Mixed Precision", h: "notebooks/02_training_optimization/02_mixed_precision.html" },
+        { t: "Gradient Accumulation", h: "notebooks/02_training_optimization/03_gradient_accumulation.html" },
+        { t: "AdamW From Scratch", h: "notebooks/02_training_optimization/04_adamw_from_scratch.html" },
+      ]},
+      { name: "GPU & NVIDIA Tools", color: "#e34948", dark: "#e66767", stops: [
+        { t: "SGEMM Optimization", h: "notebooks/05_gpu_nvidia_tools/02_sgemm_optimization.html" },
+      ]},
     ];
+    const ALL = LINES.flatMap((l) => l.stops);
     const KEY = "aipg-visited";
 
     function el(tag, cls, text) {
@@ -83,7 +161,7 @@
 
     let path = location.pathname;
     if (path.endsWith("/")) path += "index.html";
-    const current = BOOK.find((s) => path.endsWith("/" + s.h));
+    const current = ALL.find((s) => path.endsWith("/" + s.h));
 
     let visited;
     try {
@@ -103,34 +181,30 @@
     const map = el("nav", "aipg-map");
     map.setAttribute("aria-label", "Book map and reading progress");
 
-    const mods = [];
-    for (const s of BOOK) {
-      let g = mods[mods.length - 1];
-      if (!g || g.name !== s.m) { g = { name: s.m, stops: [] }; mods.push(g); }
-      g.stops.push(s);
-    }
-    for (const g of mods) {
-      const mod = el("div", "aipg-mod");
-      mod.appendChild(el("span", "aipg-mod-label", g.name));
-      const dots = el("div", "aipg-dots");
-      for (const s of g.stops) {
+    for (const line of LINES) {
+      const mod = el("div", "aipg-line");
+      mod.style.setProperty("--line", line.color);
+      mod.style.setProperty("--line-dark", line.dark);
+      mod.appendChild(el("span", "aipg-line-name", line.name));
+      const track = el("div", "aipg-track");
+      for (const s of line.stops) {
         const a = document.createElement("a");
         a.className =
-          "aipg-dot" +
+          "aipg-station" +
           (visited.has(s.h) ? " visited" : "") +
           (current === s ? " current" : "");
         a.href = root + s.h;
         a.title = s.t + (visited.has(s.h) && current !== s ? " ✓" : "");
         a.setAttribute("aria-label", s.t);
-        dots.appendChild(a);
-        if (current === s) dots.appendChild(el("span", "aipg-here", "◂ you are here"));
+        track.appendChild(a);
+        if (current === s) track.appendChild(el("span", "aipg-here", "you are here"));
       }
-      mod.appendChild(dots);
+      mod.appendChild(track);
       map.appendChild(mod);
     }
 
-    const done = BOOK.filter((s) => visited.has(s.h)).length;
-    const meta = el("span", "aipg-meta", done + " / " + BOOK.length + " read · ");
+    const done = ALL.filter((s) => visited.has(s.h)).length;
+    const meta = el("span", "aipg-meta", done + " / " + ALL.length + " stations · ");
     const reset = document.createElement("a");
     reset.textContent = "reset";
     reset.href = "#";
