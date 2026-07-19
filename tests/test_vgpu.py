@@ -5,9 +5,18 @@ for CC 7.5/8.0 (see occupancy.py's module docstring for the rules). The
 spec's Phase-1 close-out re-checks them against a live Colab T4.
 """
 
+import numpy as np
 import pytest
 
-from ai_playground.gpusim import A100_40GB, SPECS, T4, occupancy, occupancy_sweep
+from ai_playground.gpusim import (
+    A100_40GB,
+    SPECS,
+    T4,
+    kernel,
+    occupancy,
+    occupancy_sweep,
+    simulate,
+)
 
 
 class TestSpec:
@@ -92,3 +101,125 @@ class TestOccupancy:
         assert by_block[96] == pytest.approx(0.9375)
         assert by_block[256] == 1.0
         assert by_block[1024] == 1.0
+
+
+@kernel
+def _copy_contig(ctx, src, dst):
+    i = ctx.grid(1)
+    dst[i] = src[i]
+
+
+@kernel
+def _copy_strided(ctx, src, dst):
+    i = ctx.grid(1)
+    dst[i] = src[32 * i]
+
+
+class TestTiming:
+    def _mk(self, n):
+        return np.zeros(n, dtype=np.float32), np.zeros(n, dtype=np.float32)
+
+    def test_trace_wellformed(self):
+        src, dst = self._mk(128)
+        trace = simulate(_copy_contig, 4, 32, (src, dst))
+        assert trace.total_cycles > T4.lat_dram  # at least one DRAM round trip
+        assert trace.dram_bytes == 8 * 128  # 4 blocks x (1 read + 1 write) x 128B
+        assert all(e.t_end >= e.t_start for e in trace.events)
+        s = trace.summary()
+        # 32-thread blocks are block-slot limited: 16 blocks x 1 warp = 50%
+        assert s["spec"] == "T4" and s["occupancy"] == 0.5
+
+    def test_strided_slower_than_contiguous(self):
+        # Needs enough blocks that the copy is bandwidth-bound, not
+        # latency-bound — with little data in flight, latency hiding absorbs
+        # most of the strided penalty (which is itself a correct prediction).
+        n = 1024 * 32
+        src32, dst = self._mk(32 * n)
+        _, dst2 = self._mk(n)
+        t_contig = simulate(_copy_contig, 1024, 32, (src32[:n], dst[:n]))
+        t_strided = simulate(_copy_strided, 1024, 32, (src32, dst2))
+        # 32x the transactions must cost several x the cycles at the wall
+        assert t_strided.total_cycles > 5 * t_contig.total_cycles
+        assert t_strided.dram_bytes > 10 * t_contig.dram_bytes
+
+    def test_latency_hiding_low_occupancy_hurts(self):
+        # Same kernel and data; shared-memory pressure drops residency to 1
+        # block/SM, so DRAM stalls can't be hidden behind other warps.
+        src, dst = self._mk(64 * 256)
+        t_full = simulate(_copy_contig, 64, 256, (src, dst))
+        t_starved = simulate(_copy_contig, 64, 256, (src, dst), smem_per_block=48 * 1024)
+        assert t_starved.occupancy.occupancy < t_full.occupancy.occupancy
+        assert t_starved.total_cycles > t_full.total_cycles
+
+    def test_tiled_matmul_beats_naive(self):
+        TILE = 8
+
+        @kernel
+        def tiled_matmul(ctx, A, B, C):
+            tile_a = ctx.shared((TILE, TILE))
+            tile_b = ctx.shared((TILE, TILE))
+            tx, ty = ctx.threadIdx.x, ctx.threadIdx.y
+            col = ctx.blockIdx.x * TILE + tx
+            row = ctx.blockIdx.y * TILE + ty
+            acc = 0.0
+            for k0 in range(0, A.shape[1], TILE):
+                tile_a[ty, tx] = A[row, k0 + tx]
+                tile_b[ty, tx] = B[k0 + ty, col]
+                yield ctx.syncthreads()
+                for k in range(TILE):
+                    acc += tile_a[ty, k] * tile_b[k, tx]
+                yield ctx.syncthreads()
+            C[row, col] = acc
+
+        @kernel
+        def naive_matmul(ctx, A, B, C):
+            col, row = ctx.grid(2)
+            acc = 0.0
+            for k in range(A.shape[1]):
+                acc += A[row, k] * B[k, col]
+            C[row, col] = acc
+
+        n = 2 * TILE
+        rng = np.random.default_rng(3)
+        A = rng.standard_normal((n, n)).astype(np.float32)
+        B = rng.standard_normal((n, n)).astype(np.float32)
+        cfg = ((n // TILE, n // TILE), (TILE, TILE))
+        t_naive = simulate(naive_matmul, *cfg, (A, B, np.zeros((n, n), np.float32)))
+        t_tiled = simulate(
+            tiled_matmul, *cfg, (A, B, np.zeros((n, n), np.float32)),
+            smem_per_block=2 * TILE * TILE * 4,
+        )
+        assert t_tiled.total_cycles < t_naive.total_cycles
+        assert t_tiled.dram_bytes < t_naive.dram_bytes
+
+    def test_sync_stalls_recorded_and_terminates(self):
+        @kernel
+        def staggered(ctx, out):
+            s = ctx.shared((32,), np.float32)
+            t = ctx.threadIdx.x
+            s[t] = float(t)
+            yield ctx.syncthreads()
+            out[t] = s[31 - t]
+
+        trace = simulate(staggered, 2, 32, (np.zeros(64, dtype=np.float32),))
+        assert trace.total_cycles > 0  # terminated: barriers released
+
+    def test_deterministic(self):
+        src, dst = self._mk(256)
+        c1 = simulate(_copy_contig, 8, 32, (src, dst)).total_cycles
+        c2 = simulate(_copy_contig, 8, 32, (src, dst)).total_cycles
+        assert c1 == c2
+
+    def test_chrome_trace_export(self, tmp_path):
+        import json
+
+        src, dst = self._mk(128)
+        trace = simulate(_copy_contig, 4, 32, (src, dst))
+        p = tmp_path / "trace.json"
+        trace.to_chrome_json(str(p))
+        data = json.loads(p.read_text())
+        evs = [e for e in data["traceEvents"] if e["ph"] == "X"]
+        assert evs and all(
+            isinstance(e["ts"], (int, float)) and e["dur"] >= 0 and "pid" in e and "tid" in e
+            for e in evs
+        )

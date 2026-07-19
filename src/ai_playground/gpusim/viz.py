@@ -16,6 +16,7 @@ def plot_warp_accesses(
     log: AccessLog,
     array: str,
     warp: int = 0,
+    block: int = 0,
     kind: str = "r",
     max_seqs: int = 8,
     ax=None,
@@ -28,7 +29,11 @@ def plot_warp_accesses(
     accs = [
         a
         for a in log.accesses
-        if a.space == "global" and a.array == array and a.warp == warp and a.kind == kind
+        if a.space == "global"
+        and a.array == array
+        and a.warp == warp
+        and a.block == block
+        and a.kind == kind
     ]
     if not accs:
         raise ValueError(f"no logged '{kind}' accesses to {array!r} by warp {warp}")

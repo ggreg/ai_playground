@@ -35,31 +35,34 @@ BANK_BYTES = 4
 
 @dataclass(frozen=True)
 class Access:
+    block: int  # linear block id within the grid
     thread: int  # linear id within the block
     warp: int
     seq: int  # per-thread access counter — aligns lanes under lockstep
-    space: str  # 'global' | 'shared'
+    space: str  # 'global' | 'shared' | 'sync'
     array: str
-    flat: int  # flattened element index
+    flat: int  # flattened element index (barrier count for 'sync')
     itemsize: int
-    kind: str  # 'r' | 'w'
+    kind: str  # 'r' | 'w' | 's'
 
 
 @dataclass
 class AccessLog:
     accesses: list[Access] = field(default_factory=list)
+    _block: int = 0
     _thread: int = 0
     _warp: int = 0
-    _seq: dict[int, int] = field(default_factory=dict)
+    _seq: dict[tuple[int, int], int] = field(default_factory=dict)
 
-    def set_thread(self, thread: int, warp: int) -> None:
-        self._thread, self._warp = thread, warp
+    def set_thread(self, thread: int, warp: int, block: int = 0) -> None:
+        self._thread, self._warp, self._block = thread, warp, block
 
     def record(self, space: str, array: str, flat: int, itemsize: int, kind: str) -> None:
-        seq = self._seq.get(self._thread, 0)
-        self._seq[self._thread] = seq + 1
+        key = (self._block, self._thread)
+        seq = self._seq.get(key, 0)
+        self._seq[key] = seq + 1
         self.accesses.append(
-            Access(self._thread, self._warp, seq, space, array, flat, itemsize, kind)
+            Access(self._block, self._thread, self._warp, seq, space, array, flat, itemsize, kind)
         )
 
 
@@ -145,7 +148,7 @@ def _grouped(log: AccessLog, space: str):
     groups: dict[tuple, list[Access]] = {}
     for a in log.accesses:
         if a.space == space:
-            groups.setdefault((a.warp, a.seq, a.array, a.kind), []).append(a)
+            groups.setdefault((a.block, a.warp, a.seq, a.array, a.kind), []).append(a)
     return groups
 
 
@@ -156,7 +159,7 @@ def coalescing_report(log: AccessLog) -> list[WarpAccessGroup]:
     transactions == ideal is perfectly coalesced, 32x ideal is worst-case.
     """
     out = []
-    for (warp, seq, array, kind), accs in sorted(_grouped(log, "global").items()):
+    for (_block, warp, seq, array, kind), accs in sorted(_grouped(log, "global").items()):
         segments = {a.flat * a.itemsize // SEGMENT_BYTES for a in accs}
         nbytes = sum(a.itemsize for a in accs)
         ideal = max(1, -(-nbytes // SEGMENT_BYTES))  # ceil division
@@ -171,7 +174,7 @@ def bank_conflict_report(log: AccessLog) -> list[WarpAccessGroup]:
     broadcast, so duplicates are collapsed before counting.
     """
     out = []
-    for (warp, seq, array, kind), accs in sorted(_grouped(log, "shared").items()):
+    for (_block, warp, seq, array, kind), accs in sorted(_grouped(log, "shared").items()):
         addrs = {a.flat * a.itemsize for a in accs}  # dedupe: same addr = broadcast
         per_bank: dict[int, int] = {}
         for addr in addrs:

@@ -137,6 +137,8 @@ class Ctx:
     def syncthreads(self) -> _Barrier:
         """Barrier token — generator kernels must `yield ctx.syncthreads()`."""
         self._barriers += 1
+        # Logged so the timing model (gpusim.timing) knows where warps wait
+        self._block.log.record("sync", "", self._barriers, 0, "s")
         return _Barrier(self._barriers)
 
 
@@ -189,7 +191,8 @@ class _Launcher:
         for bz in range(g.z):
             for by in range(g.y):
                 for bx in range(g.x):
-                    self._run_block(Dim3(bx, by, bz), wrapped, log, is_gen)
+                    linear = bz * (g.y * g.x) + by * g.x + bx
+                    self._run_block(Dim3(bx, by, bz), linear, wrapped, log, is_gen)
         return LaunchReport(log, g, b)
 
     def _make_ctxs(self, block_idx: Dim3, log: AccessLog) -> list[Ctx]:
@@ -201,11 +204,13 @@ class _Launcher:
             for tz in range(b.z) for ty in range(b.y) for tx in range(b.x)
         ]
 
-    def _run_block(self, block_idx: Dim3, args: list, log: AccessLog, is_gen: bool) -> None:
+    def _run_block(
+        self, block_idx: Dim3, block_linear: int, args: list, log: AccessLog, is_gen: bool
+    ) -> None:
         ctxs = self._make_ctxs(block_idx, log)
         if not is_gen:
             for ctx in ctxs:
-                log.set_thread(ctx._linear, ctx.warp)
+                log.set_thread(ctx._linear, ctx.warp, block_linear)
                 self.fn(ctx, *args)
             return
 
@@ -216,7 +221,7 @@ class _Launcher:
         while alive:
             waiting, finished = [], []
             for ctx, gen in alive:
-                log.set_thread(ctx._linear, ctx.warp)
+                log.set_thread(ctx._linear, ctx.warp, block_linear)
                 try:
                     y = next(gen)
                 except StopIteration:
