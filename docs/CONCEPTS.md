@@ -14,6 +14,8 @@ Conceptual questions about LLM internals, with pointers to the specific code in 
 
 Token embeddings in this codebase are a **learned lookup table** — not a calculation in the traditional sense, but a parameter matrix trained alongside everything else.
 
+> 📺 [Transformers, the tech behind LLMs (3Blue1Brown)](https://www.youtube.com/watch?v=wjZofJX0v4M) visualizes embeddings as directions in space — the best intuition-builder for this section. More in [VIDEOS.md](VIDEOS.md).
+
 ### The Mechanism
 
 In [src/ai_playground/models/transformer.py](../src/ai_playground/models/transformer.py):
@@ -79,6 +81,8 @@ The general principle: **small, zero-mean, roughly Gaussian, with std chosen so 
 ## What's the loss function used for training?
 
 The loss function is **cross-entropy** — the standard for next-token prediction in language models. From [src/ai_playground/training/trainer.py](../src/ai_playground/training/trainer.py):
+
+> 📺 The early makemore chapters of [Neural Networks: Zero to Hero (Karpathy)](https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ) derive this exact loss from counting bigrams — worth watching if negative log-likelihood feels abstract.
 
 ```python
 logits = self.model(x)
