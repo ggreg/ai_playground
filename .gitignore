@@ -16,6 +16,8 @@ data/
 checkpoints/
 PROGRESS.md
 
-# MkDocs build output
-site/
-.cache/
+# Quarto build output
+_site/
+/.quarto/
+
+**/*.quarto_ipynb

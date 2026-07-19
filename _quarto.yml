@@ -1,0 +1,79 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.qmd
+    - docs/LEARNING_PATH.md
+    - docs/CONCEPTS.md
+    - docs/PAPERS.md
+    - docs/PERFORMANCE_EXERCISES.md
+    - docs/CLOUD_SETUP.md
+    - docs/PROGRESS_TEMPLATE.md
+    - notebooks/*/*.ipynb
+    - "!notebooks/01_transformer_internals/00_transformer_overview_rendered.ipynb"
+
+# Notebooks are rendered from their saved outputs, never executed at build
+# time — CI has no PyTorch or GPU.
+execute:
+  enabled: false
+
+website:
+  title: "AI Playground"
+  site-url: https://greg.0x80.net/ai_playground/
+  repo-url: https://github.com/ggreg/ai_playground
+  repo-actions: [source]
+  page-navigation: true
+  sidebar:
+    style: docked
+    search: true
+    contents:
+      - href: index.qmd
+        text: Home
+      - section: Guides
+        contents:
+          - href: docs/LEARNING_PATH.md
+            text: Learning Path
+          - href: docs/CONCEPTS.md
+            text: Concepts FAQ
+          - href: docs/PAPERS.md
+            text: Papers
+          - href: docs/PERFORMANCE_EXERCISES.md
+            text: Performance Exercises
+          - href: docs/CLOUD_SETUP.md
+            text: Cloud Setup
+          - href: docs/PROGRESS_TEMPLATE.md
+            text: Progress Template
+      - section: Transformer Internals
+        contents:
+          - href: notebooks/01_transformer_internals/00_transformer_overview.ipynb
+            text: Transformer Overview
+          - href: notebooks/01_transformer_internals/01_attention_mechanisms.ipynb
+            text: Attention Mechanisms
+          - href: notebooks/01_transformer_internals/02_mixture_of_experts.ipynb
+            text: Mixture of Experts
+      - section: Training Optimization
+        contents:
+          - href: notebooks/02_training_optimization/00_training_from_scratch.ipynb
+            text: Training From Scratch
+          - href: notebooks/02_training_optimization/01_learning_rate_schedules.ipynb
+            text: Learning Rate Schedules
+          - href: notebooks/02_training_optimization/02_mixed_precision.ipynb
+            text: Mixed Precision
+          - href: notebooks/02_training_optimization/03_gradient_accumulation.ipynb
+            text: Gradient Accumulation
+          - href: notebooks/02_training_optimization/04_adamw_from_scratch.ipynb
+            text: AdamW From Scratch
+      - section: GPU & NVIDIA Tools
+        contents:
+          - href: notebooks/05_gpu_nvidia_tools/02_sgemm_optimization.ipynb
+            text: SGEMM Optimization
+
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    toc: true
+    code-copy: true
+    code-overflow: wrap
+    highlight-style: github

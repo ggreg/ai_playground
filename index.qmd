@@ -1,4 +1,6 @@
-# AI Playground
+---
+title: "AI Playground"
+---
 
 A hands-on playground for experimenting with LLM internals, training optimization, distributed systems, and GPU performance. Built around a clean, from-scratch LLaMA-style transformer implementation.
 
@@ -6,9 +8,9 @@ Source code lives at [github.com/ggreg/ai_playground](https://github.com/ggreg/a
 
 ## Start here
 
-- **[Learning Path](LEARNING_PATH.md)** — the 5-phase curriculum from transformer internals to GPU tools
-- **[Concepts FAQ](CONCEPTS.md)** — deep dives on embeddings, cross-entropy, bias, and other conceptual questions
-- **[Papers](PAPERS.md)** — key papers organized by topic with summaries
+- **[Learning Path](docs/LEARNING_PATH.md)** — the 5-phase curriculum from transformer internals to GPU tools
+- **[Concepts FAQ](docs/CONCEPTS.md)** — deep dives on embeddings, cross-entropy, bias, and other conceptual questions
+- **[Papers](docs/PAPERS.md)** — key papers organized by topic with summaries
 
 ## Notebooks
 
