@@ -7,6 +7,7 @@ project:
     - docs/CONCEPTS.md
     - docs/PAPERS.md
     - docs/VIDEOS.md
+    - docs/PROJECT.md
     - docs/PERFORMANCE_EXERCISES.md
     - docs/CLOUD_SETUP.md
     - docs/PROGRESS_TEMPLATE.md
@@ -40,6 +41,8 @@ website:
             text: Papers
           - href: docs/VIDEOS.md
             text: Videos
+          - href: docs/PROJECT.md
+            text: "The Project"
           - href: docs/PERFORMANCE_EXERCISES.md
             text: Performance Exercises
           - href: docs/CLOUD_SETUP.md

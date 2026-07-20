@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Transformer Visualization: Architecture &amp; Training from Scratch</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="00_transformer_overview_rendered_files/libs/clipboard/clipboard.min.js"></script>
+<script src="00_transformer_overview_rendered_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="00_transformer_overview_rendered_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="00_transformer_overview_rendered_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="00_transformer_overview_rendered_files/libs/quarto-html/popper.min.js"></script>
+<script src="00_transformer_overview_rendered_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="00_transformer_overview_rendered_files/libs/quarto-html/anchor.min.js"></script>
+<link href="00_transformer_overview_rendered_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="00_transformer_overview_rendered_files/libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="00_transformer_overview_rendered_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="00_transformer_overview_rendered_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="00_transformer_overview_rendered_files/libs/bootstrap/bootstrap-d6a003b94517c951b2d65075d42fb01b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Transformer Visualization: Architecture &amp; Training from Scratch</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This notebook builds a tiny transformer with a <strong>toy vocabulary of 8 words</strong> and trains it for several steps so you can watch every concept come alive:</p>
+<ol type="1">
+<li><strong>Architecture diagram</strong> — see how data flows through the model</li>
+<li><strong>Single forward pass</strong> — trace a sentence through every layer</li>
+<li><strong>Training loop</strong> — watch the loss drop and predictions improve step by step</li>
+</ol>
+<section id="concepts-covered" class="level3">
+<h3 class="anchored" data-anchor-id="concepts-covered">Concepts covered</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 29%">
+<col style="width: 61%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Concept</th>
+<th>What to watch for</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>Embedding</td>
+<td>Token IDs (integers) become vectors</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>Positional encoding</td>
+<td>Same word at different positions gets different representations</td>
+</tr>
+<tr class="odd">
+<td>8</td>
+<td>Causal mask</td>
+<td>Each token can only see tokens before it</td>
+</tr>
+<tr class="even">
+<td>13</td>
+<td>Transformer block</td>
+<td>Repeated N times — attention then FFN</td>
+</tr>
+<tr class="odd">
+<td>14</td>
+<td>Output head</td>
+<td>Vectors become next-token predictions</td>
+</tr>
+<tr class="even">
+<td>15</td>
+<td>Sampling</td>
+<td>Pick the next token from the probability distribution</td>
+</tr>
+</tbody>
+</table>
+<p>Reference: <a href="https://arxiv.org/abs/1706.03762">“Attention Is All You Need”</a> · <a href="https://nlp.seas.harvard.edu/annotated-transformer/">The Annotated Transformer</a> · <a href="../../docs/PAPERS.md">docs/PAPERS.md</a></p>
+<div id="cell-1" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:30.641417Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:30.640734Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:31.434432Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:31.433916Z&quot;}}" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../src'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.nn <span class="im">as</span> nn</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch.nn.functional <span class="im">as</span> F</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.patches <span class="im">as</span> mpatches</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ai_playground.models <span class="im">import</span> Transformer, TransformerConfig</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>torch.manual_seed(<span class="dv">42</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> <span class="st">'cpu'</span>  <span class="co"># tiny model, CPU is fine</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="our-tiny-world" class="level2">
+<h2 class="anchored" data-anchor-id="our-tiny-world">1. Our Tiny World</h2>
+<p>A vocabulary of just 8 tokens. The model’s job: learn to predict the next token.</p>
+<p>We’ll teach it simple patterns like <code>the cat sat on</code> and <code>the dog ran on</code>.</p>
+<div id="cell-3" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:31.436203Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:31.436036Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:31.439437Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:31.438974Z&quot;}}" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tiny vocabulary — 8 tokens total</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># In real LLMs this would be 32K-128K subword tokens from BPE</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># (see docs/PAPERS.md § Tokenization, https://arxiv.org/abs/1508.07909)</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>VOCAB <span class="op">=</span> [<span class="st">'&lt;pad&gt;'</span>, <span class="st">'the'</span>, <span class="st">'cat'</span>, <span class="st">'dog'</span>, <span class="st">'sat'</span>, <span class="st">'ran'</span>, <span class="st">'on'</span>, <span class="st">'mat'</span>]</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>tok2id <span class="op">=</span> {t: i <span class="cf">for</span> i, t <span class="kw">in</span> <span class="bu">enumerate</span>(VOCAB)}</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>id2tok <span class="op">=</span> {i: t <span class="cf">for</span> t, i <span class="kw">in</span> tok2id.items()}</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tokenize(sentence):</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> [tok2id[w] <span class="cf">for</span> w <span class="kw">in</span> sentence.split()]</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> detokenize(ids):</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">' '</span>.join(id2tok[i] <span class="cf">for</span> i <span class="kw">in</span> ids)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Training sentences — simple patterns to learn</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>sentences <span class="op">=</span> [</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">'the cat sat on the mat'</span>,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">'the dog ran on the mat'</span>,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">'the cat ran on the mat'</span>,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">'the dog sat on the mat'</span>,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Vocabulary:'</span>, VOCAB)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'vocab_size = </span><span class="sc">{</span><span class="bu">len</span>(VOCAB)<span class="sc">}</span><span class="ch">\n</span><span class="ss">'</span>)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s <span class="kw">in</span> sentences:</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    ids <span class="op">=</span> tokenize(s)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'  "</span><span class="sc">{</span>s<span class="sc">}</span><span class="ss">" → </span><span class="sc">{</span>ids<span class="sc">}</span><span class="ss">'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Vocabulary: ['&lt;pad&gt;', 'the', 'cat', 'dog', 'sat', 'ran', 'on', 'mat']
+vocab_size = 8
+
+  "the cat sat on the mat" → [1, 2, 4, 6, 1, 7]
+  "the dog ran on the mat" → [1, 3, 5, 6, 1, 7]
+  "the cat ran on the mat" → [1, 2, 5, 6, 1, 7]
+  "the dog sat on the mat" → [1, 3, 4, 6, 1, 7]</code></pre>
+</div>
+</div>
+</section>
+<section id="architecture-diagram" class="level2">
+<h2 class="anchored" data-anchor-id="architecture-diagram">2. Architecture Diagram</h2>
+<p>Let’s draw the transformer to see how data flows through it. This is the exact architecture implemented in <code>src/ai_playground/models/transformer.py</code>.</p>
+<div id="cell-5" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:31.470888Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:31.470723Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:31.610599Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:31.609737Z&quot;}}" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> draw_transformer_architecture(n_layers<span class="op">=</span><span class="dv">2</span>):</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Draw a diagram of the decoder-only transformer architecture."""</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    fig, ax <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">14</span>))</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    ax.set_xlim(<span class="op">-</span><span class="dv">1</span>, <span class="dv">11</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="op">-</span><span class="dv">1</span>, <span class="dv">20</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    ax.axis(<span class="st">'off'</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    ax.set_aspect(<span class="st">'equal'</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Colors for each concept</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    C <span class="op">=</span> {</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">'embed'</span>: <span class="st">'#4ECDC4'</span>,    <span class="co"># teal</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">'rope'</span>: <span class="st">'#FFE66D'</span>,     <span class="co"># yellow</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">'attn'</span>: <span class="st">'#FF6B6B'</span>,     <span class="co"># red</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">'ffn'</span>: <span class="st">'#95E1D3'</span>,      <span class="co"># light green</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">'norm'</span>: <span class="st">'#C4B5FD'</span>,     <span class="co"># purple</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">'residual'</span>: <span class="st">'#94A3B8'</span>, <span class="co"># gray</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">'output'</span>: <span class="st">'#F97316'</span>,   <span class="co"># orange</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">'softmax'</span>: <span class="st">'#FB923C'</span>,  <span class="co"># light orange</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> box(x, y, w, h, label, color, sublabel<span class="op">=</span><span class="va">None</span>, fontsize<span class="op">=</span><span class="dv">11</span>):</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>        rect <span class="op">=</span> mpatches.FancyBboxPatch((x, y), w, h, boxstyle<span class="op">=</span><span class="st">'round,pad=0.15'</span>,</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>                                        facecolor<span class="op">=</span>color, edgecolor<span class="op">=</span><span class="st">'#333'</span>, linewidth<span class="op">=</span><span class="fl">1.5</span>)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>        ax.add_patch(rect)</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>        ax.text(x <span class="op">+</span> w<span class="op">/</span><span class="dv">2</span>, y <span class="op">+</span> h<span class="op">/</span><span class="dv">2</span> <span class="op">+</span> (<span class="fl">0.15</span> <span class="cf">if</span> sublabel <span class="cf">else</span> <span class="dv">0</span>), label,</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>                ha<span class="op">=</span><span class="st">'center'</span>, va<span class="op">=</span><span class="st">'center'</span>, fontsize<span class="op">=</span>fontsize, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> sublabel:</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>            ax.text(x <span class="op">+</span> w<span class="op">/</span><span class="dv">2</span>, y <span class="op">+</span> h<span class="op">/</span><span class="dv">2</span> <span class="op">-</span> <span class="fl">0.25</span>, sublabel,</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>                    ha<span class="op">=</span><span class="st">'center'</span>, va<span class="op">=</span><span class="st">'center'</span>, fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">'#555'</span>)</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> arrow(x1, y1, x2, y2, color<span class="op">=</span><span class="st">'#333'</span>):</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>        ax.annotate(<span class="st">''</span>, xy<span class="op">=</span>(x2, y2), xytext<span class="op">=</span>(x1, y1),</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>                    arrowprops<span class="op">=</span><span class="bu">dict</span>(arrowstyle<span class="op">=</span><span class="st">'-&gt;'</span>, color<span class="op">=</span>color, lw<span class="op">=</span><span class="fl">1.5</span>))</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># --- Input tokens ---</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>    ax.text(<span class="dv">5</span>, y, <span class="st">'"the  cat  sat  on  the  mat"'</span>, ha<span class="op">=</span><span class="st">'center'</span>, va<span class="op">=</span><span class="st">'center'</span>,</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>            fontsize<span class="op">=</span><span class="dv">13</span>, fontfamily<span class="op">=</span><span class="st">'monospace'</span>,</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>            bbox<span class="op">=</span><span class="bu">dict</span>(boxstyle<span class="op">=</span><span class="st">'round,pad=0.3'</span>, facecolor<span class="op">=</span><span class="st">'#F1F5F9'</span>, edgecolor<span class="op">=</span><span class="st">'#333'</span>))</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>    ax.text(<span class="dv">9</span>, y, <span class="st">'← token IDs'</span>, ha<span class="op">=</span><span class="st">'left'</span>, fontsize<span class="op">=</span><span class="dv">9</span>, color<span class="op">=</span><span class="st">'#666'</span>)</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># --- Embedding ---</span></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> <span class="fl">1.5</span></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>    arrow(<span class="dv">5</span>, <span class="fl">0.4</span>, <span class="dv">5</span>, y)</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>    box(<span class="dv">2</span>, y, <span class="dv">6</span>, <span class="fl">0.9</span>, <span class="st">'Token Embedding'</span>, C[<span class="st">'embed'</span>], <span class="st">'Concept 1: integers → vectors'</span>)</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>    ax.text(<span class="dv">9</span>, y <span class="op">+</span> <span class="fl">0.45</span>, <span class="ss">f'nn.Embedding(</span><span class="sc">{</span><span class="bu">len</span>(VOCAB)<span class="sc">}</span><span class="ss">, dim)'</span>, ha<span class="op">=</span><span class="st">'left'</span>, fontsize<span class="op">=</span><span class="dv">9</span>,</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>            color<span class="op">=</span><span class="st">'#666'</span>, fontfamily<span class="op">=</span><span class="st">'monospace'</span>)</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>    <span class="co"># --- RoPE ---</span></span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> <span class="fl">3.0</span></span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>    arrow(<span class="dv">5</span>, <span class="fl">2.5</span>, <span class="dv">5</span>, y)</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>    box(<span class="dv">2</span>, y, <span class="dv">6</span>, <span class="fl">0.9</span>, <span class="st">'+ RoPE Positional Encoding'</span>, C[<span class="st">'rope'</span>], <span class="st">'Concept 2: inject token order'</span>)</span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>    ax.text(<span class="dv">9</span>, y <span class="op">+</span> <span class="fl">0.45</span>, <span class="st">'rotate Q, K vectors'</span>, ha<span class="op">=</span><span class="st">'left'</span>, fontsize<span class="op">=</span><span class="dv">9</span>, color<span class="op">=</span><span class="st">'#666'</span>)</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>    <span class="co"># --- Transformer blocks ---</span></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>    block_start <span class="op">=</span> <span class="fl">4.5</span></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>    block_h <span class="op">=</span> <span class="fl">4.5</span></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_layers):</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>        by <span class="op">=</span> block_start <span class="op">+</span> i <span class="op">*</span> (block_h <span class="op">+</span> <span class="fl">0.8</span>)</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>        arrow(<span class="dv">5</span>, by <span class="op">-</span> <span class="fl">0.4</span>, <span class="dv">5</span>, by)</span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Block border</span></span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>        block_rect <span class="op">=</span> mpatches.FancyBboxPatch((<span class="fl">1.2</span>, by <span class="op">-</span> <span class="fl">0.1</span>), <span class="fl">7.6</span>, block_h <span class="op">+</span> <span class="fl">0.2</span>,</span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a>            boxstyle<span class="op">=</span><span class="st">'round,pad=0.2'</span>, facecolor<span class="op">=</span><span class="st">'#F8FAFC'</span>, edgecolor<span class="op">=</span><span class="st">'#94A3B8'</span>,</span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>            linewidth<span class="op">=</span><span class="fl">1.5</span>, linestyle<span class="op">=</span><span class="st">'--'</span>)</span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>        ax.add_patch(block_rect)</span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>        ax.text(<span class="fl">1.5</span>, by <span class="op">+</span> block_h <span class="op">-</span> <span class="fl">0.1</span>, <span class="ss">f'Block </span><span class="sc">{</span>i<span class="op">+</span><span class="dv">1</span><span class="sc">}</span><span class="ss">'</span>, fontsize<span class="op">=</span><span class="dv">10</span>,</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>                fontweight<span class="op">=</span><span class="st">'bold'</span>, color<span class="op">=</span><span class="st">'#64748B'</span>)</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>        ax.text(<span class="fl">8.5</span>, by <span class="op">+</span> block_h <span class="op">-</span> <span class="fl">0.1</span>, <span class="st">'Concept 13'</span>, fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">'#94A3B8'</span>, ha<span class="op">=</span><span class="st">'right'</span>)</span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a>        <span class="co"># RMSNorm</span></span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a>        ny1 <span class="op">=</span> by <span class="op">+</span> <span class="fl">0.2</span></span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>        box(<span class="fl">2.5</span>, ny1, <span class="dv">5</span>, <span class="fl">0.7</span>, <span class="st">'RMSNorm'</span>, C[<span class="st">'norm'</span>], <span class="st">'Concept 11'</span>)</span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Attention</span></span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a>        ay <span class="op">=</span> ny1 <span class="op">+</span> <span class="fl">1.1</span></span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a>        arrow(<span class="dv">5</span>, ny1 <span class="op">+</span> <span class="fl">0.7</span>, <span class="dv">5</span>, ay)</span>
+<span id="cb4-78"><a href="#cb4-78" aria-hidden="true" tabindex="-1"></a>        box(<span class="fl">2.5</span>, ay, <span class="dv">5</span>, <span class="fl">0.7</span>, <span class="st">'Multi-Head Attention'</span>, C[<span class="st">'attn'</span>], <span class="st">'Concepts 3-9: Q·K→softmax→V'</span>)</span>
+<span id="cb4-79"><a href="#cb4-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-80"><a href="#cb4-80" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Residual arrow for attention</span></span>
+<span id="cb4-81"><a href="#cb4-81" aria-hidden="true" tabindex="-1"></a>        ax.annotate(<span class="st">''</span>, xy<span class="op">=</span>(<span class="fl">2.0</span>, ay <span class="op">+</span> <span class="fl">0.35</span>), xytext<span class="op">=</span>(<span class="fl">2.0</span>, ny1 <span class="op">+</span> <span class="fl">0.35</span>),</span>
+<span id="cb4-82"><a href="#cb4-82" aria-hidden="true" tabindex="-1"></a>                    arrowprops<span class="op">=</span><span class="bu">dict</span>(arrowstyle<span class="op">=</span><span class="st">'-&gt;'</span>, color<span class="op">=</span>C[<span class="st">'residual'</span>], lw<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb4-83"><a href="#cb4-83" aria-hidden="true" tabindex="-1"></a>                                    connectionstyle<span class="op">=</span><span class="st">'arc3,rad=-0.5'</span>))</span>
+<span id="cb4-84"><a href="#cb4-84" aria-hidden="true" tabindex="-1"></a>        ax.text(<span class="fl">0.8</span>, ay <span class="op">-</span> <span class="fl">0.1</span>, <span class="st">'x + f(x)'</span>, fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span>C[<span class="st">'residual'</span>], ha<span class="op">=</span><span class="st">'center'</span>)</span>
+<span id="cb4-85"><a href="#cb4-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-86"><a href="#cb4-86" aria-hidden="true" tabindex="-1"></a>        <span class="co"># RMSNorm 2</span></span>
+<span id="cb4-87"><a href="#cb4-87" aria-hidden="true" tabindex="-1"></a>        ny2 <span class="op">=</span> ay <span class="op">+</span> <span class="fl">1.1</span></span>
+<span id="cb4-88"><a href="#cb4-88" aria-hidden="true" tabindex="-1"></a>        arrow(<span class="dv">5</span>, ay <span class="op">+</span> <span class="fl">0.7</span>, <span class="dv">5</span>, ny2)</span>
+<span id="cb4-89"><a href="#cb4-89" aria-hidden="true" tabindex="-1"></a>        box(<span class="fl">2.5</span>, ny2, <span class="dv">5</span>, <span class="fl">0.7</span>, <span class="st">'RMSNorm'</span>, C[<span class="st">'norm'</span>], <span class="st">'Concept 11'</span>)</span>
+<span id="cb4-90"><a href="#cb4-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-91"><a href="#cb4-91" aria-hidden="true" tabindex="-1"></a>        <span class="co"># FFN</span></span>
+<span id="cb4-92"><a href="#cb4-92" aria-hidden="true" tabindex="-1"></a>        fy <span class="op">=</span> ny2 <span class="op">+</span> <span class="fl">1.1</span></span>
+<span id="cb4-93"><a href="#cb4-93" aria-hidden="true" tabindex="-1"></a>        arrow(<span class="dv">5</span>, ny2 <span class="op">+</span> <span class="fl">0.7</span>, <span class="dv">5</span>, fy)</span>
+<span id="cb4-94"><a href="#cb4-94" aria-hidden="true" tabindex="-1"></a>        box(<span class="fl">2.5</span>, fy, <span class="dv">5</span>, <span class="fl">0.7</span>, <span class="st">'SwiGLU FFN'</span>, C[<span class="st">'ffn'</span>], <span class="st">'Concept 12: per-token transform'</span>)</span>
+<span id="cb4-95"><a href="#cb4-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-96"><a href="#cb4-96" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Residual arrow for FFN</span></span>
+<span id="cb4-97"><a href="#cb4-97" aria-hidden="true" tabindex="-1"></a>        ax.annotate(<span class="st">''</span>, xy<span class="op">=</span>(<span class="fl">2.0</span>, fy <span class="op">+</span> <span class="fl">0.35</span>), xytext<span class="op">=</span>(<span class="fl">2.0</span>, ny2 <span class="op">+</span> <span class="fl">0.35</span>),</span>
+<span id="cb4-98"><a href="#cb4-98" aria-hidden="true" tabindex="-1"></a>                    arrowprops<span class="op">=</span><span class="bu">dict</span>(arrowstyle<span class="op">=</span><span class="st">'-&gt;'</span>, color<span class="op">=</span>C[<span class="st">'residual'</span>], lw<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb4-99"><a href="#cb4-99" aria-hidden="true" tabindex="-1"></a>                                    connectionstyle<span class="op">=</span><span class="st">'arc3,rad=-0.5'</span>))</span>
+<span id="cb4-100"><a href="#cb4-100" aria-hidden="true" tabindex="-1"></a>        ax.text(<span class="fl">0.8</span>, fy <span class="op">-</span> <span class="fl">0.1</span>, <span class="st">'x + f(x)'</span>, fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span>C[<span class="st">'residual'</span>], ha<span class="op">=</span><span class="st">'center'</span>)</span>
+<span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a>    <span class="co"># --- Final norm ---</span></span>
+<span id="cb4-103"><a href="#cb4-103" aria-hidden="true" tabindex="-1"></a>    ny <span class="op">=</span> block_start <span class="op">+</span> n_layers <span class="op">*</span> (block_h <span class="op">+</span> <span class="fl">0.8</span>) <span class="op">-</span> <span class="fl">0.1</span></span>
+<span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a>    arrow(<span class="dv">5</span>, ny <span class="op">-</span> <span class="fl">0.5</span>, <span class="dv">5</span>, ny)</span>
+<span id="cb4-105"><a href="#cb4-105" aria-hidden="true" tabindex="-1"></a>    box(<span class="fl">2.5</span>, ny, <span class="dv">5</span>, <span class="fl">0.7</span>, <span class="st">'RMSNorm'</span>, C[<span class="st">'norm'</span>], <span class="st">'Concept 11: final normalization'</span>)</span>
+<span id="cb4-106"><a href="#cb4-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-107"><a href="#cb4-107" aria-hidden="true" tabindex="-1"></a>    <span class="co"># --- Output head ---</span></span>
+<span id="cb4-108"><a href="#cb4-108" aria-hidden="true" tabindex="-1"></a>    oy <span class="op">=</span> ny <span class="op">+</span> <span class="fl">1.2</span></span>
+<span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a>    arrow(<span class="dv">5</span>, ny <span class="op">+</span> <span class="fl">0.7</span>, <span class="dv">5</span>, oy)</span>
+<span id="cb4-110"><a href="#cb4-110" aria-hidden="true" tabindex="-1"></a>    box(<span class="dv">2</span>, oy, <span class="dv">6</span>, <span class="fl">0.9</span>, <span class="st">'Output Head (Linear)'</span>, C[<span class="st">'output'</span>], <span class="st">'Concept 14: dim → vocab_size'</span>)</span>
+<span id="cb4-111"><a href="#cb4-111" aria-hidden="true" tabindex="-1"></a>    ax.text(<span class="dv">9</span>, oy <span class="op">+</span> <span class="fl">0.45</span>, <span class="ss">f'→ logits (</span><span class="sc">{</span><span class="bu">len</span>(VOCAB)<span class="sc">}</span><span class="ss"> scores)'</span>, ha<span class="op">=</span><span class="st">'left'</span>, fontsize<span class="op">=</span><span class="dv">9</span>, color<span class="op">=</span><span class="st">'#666'</span>)</span>
+<span id="cb4-112"><a href="#cb4-112" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-113"><a href="#cb4-113" aria-hidden="true" tabindex="-1"></a>    <span class="co"># --- Softmax ---</span></span>
+<span id="cb4-114"><a href="#cb4-114" aria-hidden="true" tabindex="-1"></a>    sy <span class="op">=</span> oy <span class="op">+</span> <span class="fl">1.4</span></span>
+<span id="cb4-115"><a href="#cb4-115" aria-hidden="true" tabindex="-1"></a>    arrow(<span class="dv">5</span>, oy <span class="op">+</span> <span class="fl">0.9</span>, <span class="dv">5</span>, sy)</span>
+<span id="cb4-116"><a href="#cb4-116" aria-hidden="true" tabindex="-1"></a>    box(<span class="dv">2</span>, sy, <span class="dv">6</span>, <span class="fl">0.9</span>, <span class="st">'Softmax → Next Token'</span>, C[<span class="st">'softmax'</span>], <span class="st">'Concept 15: probabilities → sample'</span>)</span>
+<span id="cb4-117"><a href="#cb4-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-118"><a href="#cb4-118" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="op">-</span><span class="fl">0.8</span>, sy <span class="op">+</span> <span class="fl">1.6</span>)</span>
+<span id="cb4-119"><a href="#cb4-119" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="st">'Decoder-Only Transformer (LLaMA-style)'</span>, fontsize<span class="op">=</span><span class="dv">15</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>, pad<span class="op">=</span><span class="dv">15</span>)</span>
+<span id="cb4-120"><a href="#cb4-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-121"><a href="#cb4-121" aria-hidden="true" tabindex="-1"></a>    plt.tight_layout()</span>
+<span id="cb4-122"><a href="#cb4-122" aria-hidden="true" tabindex="-1"></a>    plt.show()</span>
+<span id="cb4-123"><a href="#cb4-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-124"><a href="#cb4-124" aria-hidden="true" tabindex="-1"></a>draw_transformer_architecture(n_layers<span class="op">=</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="00_transformer_overview_rendered_files/figure-html/cell-4-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="b.-understanding-the-building-blocks" class="level2">
+<h2 class="anchored" data-anchor-id="b.-understanding-the-building-blocks">2b. Understanding the Building Blocks</h2>
+<p>The architecture diagram above shows several components that deserve explanation before we start training. Each one solves a specific problem.</p>
+<section id="rmsnorm-the-purple-boxes" class="level3">
+<h3 class="anchored" data-anchor-id="rmsnorm-the-purple-boxes">RMSNorm (the purple boxes)</h3>
+<p><strong>Problem:</strong> As vectors flow through many layers, their magnitudes can grow or shrink uncontrollably. A vector that was <code>[0.1, 0.2, 0.3]</code> might become <code>[500, 1000, 1500]</code> after a few layers. This makes training unstable.</p>
+<p><strong>Solution:</strong> Normalize each vector to have unit RMS (root mean square). Divide by the vector’s average magnitude, then scale by a learned weight:</p>
+<pre><code>rms = sqrt(mean(x²))
+output = (x / rms) * weight</code></pre>
+<p>That’s it. Standard <strong>LayerNorm</strong> also subtracts the mean (centering), but <a href="https://arxiv.org/abs/1910.07467">Zhang &amp; Sennrich (2019)</a> showed the centering is unnecessary — removing it makes RMSNorm ~10-15% faster with no quality loss. Used in LLaMA, Mistral, Gemma, and most modern LLMs.</p>
+<p>Implementation: <code>src/ai_playground/models/layers.py</code> → <code>RMSNorm</code> Paper: <a href="https://arxiv.org/abs/1910.07467">Root Mean Square Layer Normalization</a> See also: <a href="../../docs/PAPERS.md#normalization--activations">docs/PAPERS.md § Normalization &amp; Activations</a></p>
+<hr>
+</section>
+<section id="swiglu-ffn-the-green-boxes" class="level3">
+<h3 class="anchored" data-anchor-id="swiglu-ffn-the-green-boxes">SwiGLU FFN (the green boxes)</h3>
+<p><strong>Problem:</strong> Attention lets tokens talk to each other, but it’s a linear operation (weighted average). The model also needs a <strong>nonlinear transformation</strong> applied to each token independently — this is where the model stores “knowledge” (facts, patterns, associations) in its weight matrices.</p>
+<p><strong>Solution:</strong> A feed-forward network (FFN) with a <strong>gated</strong> activation:</p>
+<pre><code>gate  = swish(x @ W_gate)     ← "how much to let through" (0 to 1-ish)
+value = x @ W_up              ← "what to let through"
+output = (gate * value) @ W_down</code></pre>
+<p>The <strong>swish</strong> function (= x × sigmoid(x)) is a smooth version of ReLU. The <strong>gating</strong> mechanism (multiply gate × value) lets the network learn to selectively activate different dimensions — like an if/else in the vector space.</p>
+<p>Standard FFN uses 2 weight matrices. SwiGLU uses 3 (gate, up, down), but the hidden dimension is reduced by 2/3, so total parameters are similar while performance is consistently better.</p>
+<p>Implementation: <code>src/ai_playground/models/layers.py</code> → <code>SwiGLU</code> Paper: <a href="https://arxiv.org/abs/2002.05202">GLU Variants Improve Transformer</a> (Shazeer, 2020) See also: <a href="../../docs/PAPERS.md#normalization--activations">docs/PAPERS.md § Normalization &amp; Activations</a></p>
+<hr>
+</section>
+<section id="why-softmax-the-orange-boxes" class="level3">
+<h3 class="anchored" data-anchor-id="why-softmax-the-orange-boxes">Why Softmax? (the orange boxes)</h3>
+<p><strong>Problem:</strong> The model’s output is a vector of raw scores (logits) — one per vocabulary token. We need to convert these into <strong>probabilities</strong> that sum to 1 so we can sample the next token.</p>
+<p><strong>Why not just divide by the sum?</strong> Logits can be negative, and we want the highest score to get the most probability, with an exponential preference:</p>
+<pre><code>softmax(x_i) = exp(x_i) / sum(exp(x_j))</code></pre>
+<ul>
+<li>A score of 5.0 vs 3.0: softmax gives ~88% vs ~12% (strong preference)</li>
+<li>A score of 1.0 vs 0.9: softmax gives ~52% vs ~48% (near-uniform)</li>
+</ul>
+<p>The <strong>exponential</strong> amplifies differences — the model can be confidently decisive (one token dominates) or express genuine uncertainty (several tokens are plausible).</p>
+<p>Softmax also appears <strong>inside attention</strong> (concept 6): after computing Q·K scores, softmax converts them to attention weights that sum to 1 for each query position. Same logic — we want a probability distribution over which tokens to attend to.</p>
+<p>Reference: <a href="https://arxiv.org/abs/1706.03762">“Attention Is All You Need” §3.2.1</a></p>
+<hr>
+</section>
+<section id="the-adamw-optimizer-used-in-training-below" class="level3">
+<h3 class="anchored" data-anchor-id="the-adamw-optimizer-used-in-training-below">The AdamW Optimizer (used in training below)</h3>
+<p><strong>Problem:</strong> Gradient descent says “move parameters opposite to the gradient.” But how far? And what if gradients are noisy (different every batch)?</p>
+<p><strong>Solution:</strong> AdamW tracks two running averages for <strong>each parameter</strong>:</p>
+<ol type="1">
+<li><p><strong>Momentum (m)</strong>: smoothed gradient direction — filters out noise, like a rolling average. If gradients consistently point left, momentum builds up and we take bigger steps left.</p></li>
+<li><p><strong>Velocity (v)</strong>: smoothed gradient magnitude — tells us how “steep” the landscape is around this parameter. Parameters with large gradients get smaller effective learning rates (careful steps), and vice versa.</p></li>
+</ol>
+<p>The update: <code>θ = θ - lr × momentum / sqrt(velocity)</code></p>
+<p>The “W” in AdamW: <strong>weight decay</strong> is applied directly to parameters (<code>θ = θ × (1 - lr × λ)</code>) rather than through the gradient. This simple fix, decoupling weight decay from the adaptive learning rate, meaningfully improves training.</p>
+<p>Implementation: <code>src/ai_playground/training/optimizers.py</code> → <code>AdamWFromScratch</code> For the full step-by-step build: <code>notebooks/02_training_optimization/04_adamw_from_scratch.ipynb</code> Paper: <a href="https://arxiv.org/abs/1711.05101">Decoupled Weight Decay Regularization</a> (Loshchilov &amp; Hutter, 2019) See also: <a href="../../docs/PAPERS.md#training-optimization">docs/PAPERS.md § Training Optimization</a></p>
+<div id="cell-6b" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:31.612039Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:31.611955Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:31.618262Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:31.617818Z&quot;}}" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># === RMSNorm in action ===</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ai_playground.models.layers <span class="im">import</span> RMSNorm</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> torch.tensor([[<span class="fl">3.0</span>, <span class="fl">1.0</span>, <span class="fl">4.0</span>, <span class="fl">1.0</span>, <span class="fl">5.0</span>]])  <span class="co"># a vector with varying magnitudes</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>norm <span class="op">=</span> RMSNorm(<span class="dv">5</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    x_normed <span class="op">=</span> norm(x)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>rms <span class="op">=</span> x.<span class="bu">pow</span>(<span class="dv">2</span>).mean().sqrt()</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'=== RMSNorm ==='</span>)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Input:      </span><span class="sc">{</span>x[<span class="dv">0</span>]<span class="sc">.</span>tolist()<span class="sc">}</span><span class="ss">  (RMS = </span><span class="sc">{</span>rms<span class="sc">:.2f}</span><span class="ss">)'</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Normalized: </span><span class="sc">{</span>[<span class="bu">round</span>(v, <span class="dv">4</span>) <span class="cf">for</span> v <span class="kw">in</span> x_normed[<span class="dv">0</span>].tolist()]<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'After norm, RMS </span><span class="ch">\u2248</span><span class="ss"> 1.0 </span><span class="ch">\u2014</span><span class="ss"> magnitudes are controlled.</span><span class="ch">\n</span><span class="ss">'</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co"># === SwiGLU FFN in action ===</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ai_playground.models.layers <span class="im">import</span> SwiGLU</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>ffn <span class="op">=</span> SwiGLU(dim<span class="op">=</span><span class="dv">8</span>, hidden_dim<span class="op">=</span><span class="dv">16</span>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>x_ffn <span class="op">=</span> torch.randn(<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">8</span>)  <span class="co"># (batch=1, seq=3, dim=8)</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    y_ffn <span class="op">=</span> ffn(x_ffn)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'=== SwiGLU FFN ==='</span>)</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Input shape:  </span><span class="sc">{</span><span class="bu">list</span>(x_ffn.shape)<span class="sc">}</span><span class="ss">  (batch, seq, dim)'</span>)</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Output shape: </span><span class="sc">{</span><span class="bu">list</span>(y_ffn.shape)<span class="sc">}</span><span class="ss">  (same </span><span class="ch">\u2014</span><span class="ss"> FFN transforms each token independently)'</span>)</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Hidden dim:   16 (expanded from 8 for more expressive intermediate repr)'</span>)</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Num params:   </span><span class="sc">{</span><span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> ffn.parameters())<span class="sc">}</span><span class="ss">  (3 matrices: gate, up, down)</span><span class="ch">\n</span><span class="ss">'</span>)</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="co"># === Softmax in action ===</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'=== Why Softmax? ==='</span>)</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>logits <span class="op">=</span> torch.tensor([<span class="fl">5.0</span>, <span class="fl">3.0</span>, <span class="fl">1.0</span>, <span class="op">-</span><span class="fl">1.0</span>, <span class="op">-</span><span class="fl">3.0</span>])</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>probs <span class="op">=</span> F.softmax(logits, dim<span class="op">=-</span><span class="dv">1</span>)</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Raw logits:     </span><span class="sc">{</span>logits<span class="sc">.</span>tolist()<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Softmax probs:  </span><span class="sc">{</span>[<span class="ss">f"</span><span class="sc">{</span>p<span class="sc">:.1%}</span><span class="ss">"</span> <span class="cf">for</span> p <span class="kw">in</span> probs.tolist()]<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Sum of probs:   </span><span class="sc">{</span>probs<span class="sc">.</span><span class="bu">sum</span>()<span class="sc">.</span>item()<span class="sc">:.4f}</span><span class="ss">  (always 1.0)'</span>)</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Highest logit (5.0) gets </span><span class="sc">{</span>probs[<span class="dv">0</span>]<span class="sc">:.0%}</span><span class="ss"> of probability </span><span class="ch">\u2014</span><span class="ss"> exponential amplifies differences.</span><span class="ch">\n</span><span class="ss">'</span>)</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Temperature effect (used in generation)</span></span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Temperature controls sharpness:'</span>)</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> temp <span class="kw">in</span> [<span class="fl">0.5</span>, <span class="fl">1.0</span>, <span class="fl">2.0</span>]:</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>    p <span class="op">=</span> F.softmax(logits <span class="op">/</span> temp, dim<span class="op">=-</span><span class="dv">1</span>)</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>    label <span class="op">=</span> <span class="st">"sharper"</span> <span class="cf">if</span> temp <span class="op">&lt;</span> <span class="dv">1</span> <span class="cf">else</span> <span class="st">"flatter"</span> <span class="cf">if</span> temp <span class="op">&gt;</span> <span class="dv">1</span> <span class="cf">else</span> <span class="st">"default"</span></span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'  temp=</span><span class="sc">{</span>temp<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>[<span class="ss">f"</span><span class="sc">{</span>v<span class="sc">:.1%}</span><span class="ss">"</span> <span class="cf">for</span> v <span class="kw">in</span> p.tolist()]<span class="sc">}</span><span class="ss">  (</span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">)'</span>)</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'</span><span class="ch">\n</span><span class="st">Low temperature </span><span class="ch">\u2192</span><span class="st"> more confident. High temperature </span><span class="ch">\u2192</span><span class="st"> more random.'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>=== RMSNorm ===
+Input:      [3.0, 1.0, 4.0, 1.0, 5.0]  (RMS = 3.22)
+Normalized: [0.9303, 0.3101, 1.2403, 0.3101, 1.5504]
+After norm, RMS ≈ 1.0 — magnitudes are controlled.
+
+=== SwiGLU FFN ===
+Input shape:  [1, 3, 8]  (batch, seq, dim)
+Output shape: [1, 3, 8]  (same — FFN transforms each token independently)
+Hidden dim:   16 (expanded from 8 for more expressive intermediate repr)
+Num params:   384  (3 matrices: gate, up, down)
+
+=== Why Softmax? ===
+Raw logits:     [5.0, 3.0, 1.0, -1.0, -3.0]
+Softmax probs:  ['86.5%', '11.7%', '1.6%', '0.2%', '0.0%']
+Sum of probs:   1.0000  (always 1.0)
+Highest logit (5.0) gets 86% of probability — exponential amplifies differences.
+
+Temperature controls sharpness:
+  temp=0.5: ['98.2%', '1.8%', '0.0%', '0.0%', '0.0%']  (sharper)
+  temp=1.0: ['86.5%', '11.7%', '1.6%', '0.2%', '0.0%']  (default)
+  temp=2.0: ['63.6%', '23.4%', '8.6%', '3.2%', '1.2%']  (flatter)
+
+Low temperature → more confident. High temperature → more random.</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="build-our-tiny-model" class="level2">
+<h2 class="anchored" data-anchor-id="build-our-tiny-model">3. Build Our Tiny Model</h2>
+<p>A 2-layer transformer with dim=32. Small enough to watch every detail, but uses the exact same code as the larger configs.</p>
+<div id="cell-8" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:31.619817Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:31.619699Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:31.624976Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:31.624395Z&quot;}}" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tiny config — same TransformerConfig, just very small numbers</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> TransformerConfig(</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    vocab_size<span class="op">=</span><span class="bu">len</span>(VOCAB),   <span class="co"># 8 tokens</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    dim<span class="op">=</span><span class="dv">32</span>,                  <span class="co"># 32-dimensional vectors</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    n_layers<span class="op">=</span><span class="dv">2</span>,              <span class="co"># 2 transformer blocks</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    n_heads<span class="op">=</span><span class="dv">4</span>,               <span class="co"># 4 attention heads</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    n_kv_heads<span class="op">=</span><span class="dv">2</span>,            <span class="co"># GQA: 2 KV heads shared by 4 Q heads</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    max_seq_len<span class="op">=</span><span class="dv">16</span>,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    ffn_dim_multiplier<span class="op">=</span><span class="fl">2.0</span>,</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> Transformer(config).to(device)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>n_params <span class="op">=</span> <span class="bu">sum</span>(p.numel() <span class="cf">for</span> p <span class="kw">in</span> model.parameters())</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Model: </span><span class="sc">{</span>config<span class="sc">.</span>n_layers<span class="sc">}</span><span class="ss"> layers, dim=</span><span class="sc">{</span>config<span class="sc">.</span>dim<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>n_params<span class="sc">:,}</span><span class="ss"> parameters'</span>)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Vocab: </span><span class="sc">{</span><span class="bu">len</span>(VOCAB)<span class="sc">}</span><span class="ss"> tokens'</span>)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Head dim: </span><span class="sc">{</span>config<span class="sc">.</span>head_dim<span class="sc">}</span><span class="ss">, KV heads: </span><span class="sc">{</span>config<span class="sc">.</span>kv_heads<span class="sc">}</span><span class="ss">'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Model: 2 layers, dim=32, 19,104 parameters
+Vocab: 8 tokens
+Head dim: 8, KV heads: 2</code></pre>
+</div>
+</div>
+</section>
+<section id="trace-a-single-forward-pass" class="level2">
+<h2 class="anchored" data-anchor-id="trace-a-single-forward-pass">4. Trace a Single Forward Pass</h2>
+<p>Let’s follow the sentence <code>"the cat sat on the mat"</code> through the model and see what comes out at each stage.</p>
+<div id="cell-10" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:31.626441Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:31.626338Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:31.632988Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:31.632483Z&quot;}}" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Tokenize and prepare input</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>sentence <span class="op">=</span> <span class="st">'the cat sat on the mat'</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>tokens <span class="op">=</span> tokenize(sentence)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>token_ids <span class="op">=</span> torch.tensor([tokens], device<span class="op">=</span>device)  <span class="co"># (1, 6)</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Input:     "</span><span class="sc">{</span>sentence<span class="sc">}</span><span class="ss">"'</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Token IDs: </span><span class="sc">{</span>tokens<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Shape:     </span><span class="sc">{</span>token_ids<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">  (batch=1, seq_len=6)</span><span class="ch">\n</span><span class="ss">'</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Concept 1: Embedding ---</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    embeddings <span class="op">=</span> model.tok_embeddings(token_ids)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'After embedding (concept 1):'</span>)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  Shape: </span><span class="sc">{</span>embeddings<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">  (batch, seq_len, dim=</span><span class="sc">{</span>config<span class="sc">.</span>dim<span class="sc">}</span><span class="ss">)'</span>)</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  Each token is now a </span><span class="sc">{</span>config<span class="sc">.</span>dim<span class="sc">}</span><span class="ss">-dim vector'</span>)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  "the" → [</span><span class="sc">{</span>embeddings[<span class="dv">0</span>, <span class="dv">0</span>, :<span class="dv">4</span>]<span class="sc">.</span>tolist()<span class="sc">}</span><span class="ss">  ...]'</span>)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  "cat" → [</span><span class="sc">{</span>embeddings[<span class="dv">0</span>, <span class="dv">1</span>, :<span class="dv">4</span>]<span class="sc">.</span>tolist()<span class="sc">}</span><span class="ss">  ...]</span><span class="ch">\n</span><span class="ss">'</span>)</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Concept 2: Same word, different position ---</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Same word "the" at position 0 vs position 4:'</span>)</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  Position 0: [</span><span class="sc">{</span>embeddings[<span class="dv">0</span>, <span class="dv">0</span>, :<span class="dv">6</span>]<span class="sc">.</span>tolist()<span class="sc">}</span><span class="ss">  ...]'</span>)</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  Position 4: [</span><span class="sc">{</span>embeddings[<span class="dv">0</span>, <span class="dv">4</span>, :<span class="dv">6</span>]<span class="sc">.</span>tolist()<span class="sc">}</span><span class="ss">  ...]'</span>)</span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  Before RoPE these are identical — RoPE rotates Q,K inside attention'</span>)</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  to make the model aware of position.</span><span class="ch">\n</span><span class="ss">'</span>)</span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Full forward pass → logits ---</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>    logits <span class="op">=</span> model(token_ids)  <span class="co"># (1, 6, vocab_size)</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Output logits (concept 14):'</span>)</span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  Shape: </span><span class="sc">{</span>logits<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">  (batch, seq_len, vocab_size=</span><span class="sc">{</span>config<span class="sc">.</span>vocab_size<span class="sc">}</span><span class="ss">)'</span>)</span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  Each position has </span><span class="sc">{</span>config<span class="sc">.</span>vocab_size<span class="sc">}</span><span class="ss"> scores — one per vocabulary token</span><span class="ch">\n</span><span class="ss">'</span>)</span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Concept 15: Softmax → probabilities ---</span></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>probs <span class="op">=</span> F.softmax(logits[<span class="dv">0</span>], dim<span class="op">=-</span><span class="dv">1</span>)  <span class="co"># (6, 8)</span></span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Predictions at each position (before training — random!):'</span>)</span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(tokens)):</span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>    top_prob, top_id <span class="op">=</span> probs[i].topk(<span class="dv">3</span>)</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>    preds <span class="op">=</span> <span class="st">', '</span>.join(<span class="ss">f'</span><span class="sc">{</span>id2tok[j.item()]<span class="sc">}</span><span class="ss">(</span><span class="sc">{</span>p<span class="sc">:.0%}</span><span class="ss">)'</span> <span class="cf">for</span> p, j <span class="kw">in</span> <span class="bu">zip</span>(top_prob, top_id))</span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>    target <span class="op">=</span> id2tok[tokens[i<span class="op">+</span><span class="dv">1</span>]] <span class="cf">if</span> i<span class="op">+</span><span class="dv">1</span> <span class="op">&lt;</span> <span class="bu">len</span>(tokens) <span class="cf">else</span> <span class="st">'(end)'</span></span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'  After "</span><span class="sc">{</span>id2tok[tokens[i]]<span class="sc">}</span><span class="ss">" → predicts: </span><span class="sc">{</span>preds<span class="sc">}</span><span class="ss">   (should be: </span><span class="sc">{</span>target<span class="sc">}</span><span class="ss">)'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Input:     "the cat sat on the mat"
+Token IDs: [1, 2, 4, 6, 1, 7]
+Shape:     torch.Size([1, 6])  (batch=1, seq_len=6)
+
+After embedding (concept 1):
+  Shape: torch.Size([1, 6, 32])  (batch, seq_len, dim=32)
+  Each token is now a 32-dim vector
+  "the" → [[-0.0320155955851078, -0.009524675086140633, 0.0022061688359826803, -0.0008383149397559464]  ...]
+  "cat" → [[0.004457029979676008, 0.03946416452527046, -0.01665784791111946, 0.005129831377416849]  ...]
+
+Same word "the" at position 0 vs position 4:
+  Position 0: [[-0.0320155955851078, -0.009524675086140633, 0.0022061688359826803, -0.0008383149397559464, -0.006199481897056103, 0.001743849366903305]  ...]
+  Position 4: [[-0.0320155955851078, -0.009524675086140633, 0.0022061688359826803, -0.0008383149397559464, -0.006199481897056103, 0.001743849366903305]  ...]
+  Before RoPE these are identical — RoPE rotates Q,K inside attention
+  to make the model aware of position.
+
+Output logits (concept 14):
+  Shape: torch.Size([1, 6, 8])  (batch, seq_len, vocab_size=8)
+  Each position has 8 scores — one per vocabulary token
+
+Predictions at each position (before training — random!):
+  After "the" → predicts: mat(14%), ran(14%), sat(13%)   (should be: cat)
+  After "cat" → predicts: on(15%), dog(13%), cat(13%)   (should be: sat)
+  After "sat" → predicts: sat(17%), on(13%), mat(13%)   (should be: on)
+  After "on" → predicts: on(14%), mat(13%), the(13%)   (should be: the)
+  After "the" → predicts: ran(14%), mat(14%), on(13%)   (should be: mat)
+  After "mat" → predicts: ran(16%), mat(13%), the(13%)   (should be: (end))</code></pre>
+</div>
+</div>
+</section>
+<section id="training-watch-the-model-learn" class="level2">
+<h2 class="anchored" data-anchor-id="training-watch-the-model-learn">5. Training: Watch the Model Learn</h2>
+<p>Now let’s train for 200 steps and track: - <strong>Loss</strong> — how wrong the predictions are (lower = better) - <strong>Predictions</strong> — what the model thinks comes next - <strong>Accuracy</strong> — fraction of correct next-token predictions</p>
+<p>The training objective is <strong>next-token prediction</strong>: given <code>the cat sat</code>, predict that <code>on</code> comes next. This is done at every position simultaneously.</p>
+<div id="cell-12" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:31.634464Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:31.634352Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:31.637948Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:31.637323Z&quot;}}" data-execution_count="7">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare training data: input = tokens[:-1], target = tokens[1:]</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># "the cat sat on the mat" → input: "the cat sat on the", target: "cat sat on the mat"</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>train_x <span class="op">=</span> []</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>train_y <span class="op">=</span> []</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s <span class="kw">in</span> sentences:</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    ids <span class="op">=</span> tokenize(s)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    train_x.append(ids[:<span class="op">-</span><span class="dv">1</span>])   <span class="co"># all tokens except last</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    train_y.append(ids[<span class="dv">1</span>:])    <span class="co"># all tokens except first (shifted by 1)</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>train_x <span class="op">=</span> torch.tensor(train_x, device<span class="op">=</span>device)  <span class="co"># (4, 5)</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>train_y <span class="op">=</span> torch.tensor(train_y, device<span class="op">=</span>device)  <span class="co"># (4, 5)</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Training data (next-token prediction):'</span>)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  Batch size: </span><span class="sc">{</span>train_x<span class="sc">.</span>shape[<span class="dv">0</span>]<span class="sc">}</span><span class="ss"> sentences'</span>)</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'  Sequence length: </span><span class="sc">{</span>train_x<span class="sc">.</span>shape[<span class="dv">1</span>]<span class="sc">}</span><span class="ss"> tokens</span><span class="ch">\n</span><span class="ss">'</span>)</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(sentences)):</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    inp <span class="op">=</span> [id2tok[j.item()] <span class="cf">for</span> j <span class="kw">in</span> train_x[i]]</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    tgt <span class="op">=</span> [id2tok[j.item()] <span class="cf">for</span> j <span class="kw">in</span> train_y[i]]</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'  Input:  </span><span class="sc">{</span>inp<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'  Target: </span><span class="sc">{</span>tgt<span class="sc">}</span><span class="ch">\n</span><span class="ss">'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Training data (next-token prediction):
+  Batch size: 4 sentences
+  Sequence length: 5 tokens
+
+  Input:  ['the', 'cat', 'sat', 'on', 'the']
+  Target: ['cat', 'sat', 'on', 'the', 'mat']
+
+  Input:  ['the', 'dog', 'ran', 'on', 'the']
+  Target: ['dog', 'ran', 'on', 'the', 'mat']
+
+  Input:  ['the', 'cat', 'ran', 'on', 'the']
+  Target: ['cat', 'ran', 'on', 'the', 'mat']
+
+  Input:  ['the', 'dog', 'sat', 'on', 'the']
+  Target: ['dog', 'sat', 'on', 'the', 'mat']
+</code></pre>
+</div>
+</div>
+<div id="cell-13" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:31.639278Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:31.639183Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:32.577681Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:32.577124Z&quot;}}" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Training loop</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># AdamW optimizer (https://arxiv.org/abs/1711.05101)</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># See docs/PAPERS.md § Training Optimization</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>optimizer <span class="op">=</span> torch.optim.AdamW(model.parameters(), lr<span class="op">=</span><span class="fl">3e-3</span>, weight_decay<span class="op">=</span><span class="fl">0.01</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>n_steps <span class="op">=</span> <span class="dv">200</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>log_every <span class="op">=</span> <span class="dv">10</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>snapshot_steps <span class="op">=</span> [<span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">20</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">199</span>]  <span class="co"># capture predictions at these steps</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>losses <span class="op">=</span> []</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>accuracies <span class="op">=</span> []</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>snapshots <span class="op">=</span> []  <span class="co"># (step, predictions_per_position)</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>model.train()</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> step <span class="kw">in</span> <span class="bu">range</span>(n_steps):</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    logits <span class="op">=</span> model(train_x)  <span class="co"># (4, 5, 8)</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    loss <span class="op">=</span> F.cross_entropy(logits.view(<span class="op">-</span><span class="dv">1</span>, config.vocab_size), train_y.view(<span class="op">-</span><span class="dv">1</span>))</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>    optimizer.zero_grad()</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>    loss.backward()</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>    optimizer.step()</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Track metrics</span></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>        preds <span class="op">=</span> logits.argmax(dim<span class="op">=-</span><span class="dv">1</span>)  <span class="co"># (4, 5)</span></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>        acc <span class="op">=</span> (preds <span class="op">==</span> train_y).<span class="bu">float</span>().mean().item()</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>        losses.append(loss.item())</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>        accuracies.append(acc)</span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Snapshot predictions for visualization</span></span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> step <span class="kw">in</span> snapshot_steps:</span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a>            probs <span class="op">=</span> F.softmax(logits[<span class="dv">0</span>], dim<span class="op">=-</span><span class="dv">1</span>)  <span class="co"># first sentence</span></span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a>            snap <span class="op">=</span> []</span>
+<span id="cb16-35"><a href="#cb16-35" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(train_x.shape[<span class="dv">1</span>]):</span>
+<span id="cb16-36"><a href="#cb16-36" aria-hidden="true" tabindex="-1"></a>                top_p, top_i <span class="op">=</span> probs[i].topk(<span class="dv">3</span>)</span>
+<span id="cb16-37"><a href="#cb16-37" aria-hidden="true" tabindex="-1"></a>                snap.append([(id2tok[j.item()], p.item()) <span class="cf">for</span> p, j <span class="kw">in</span> <span class="bu">zip</span>(top_p, top_i)])</span>
+<span id="cb16-38"><a href="#cb16-38" aria-hidden="true" tabindex="-1"></a>            snapshots.append((step, snap))</span>
+<span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-40"><a href="#cb16-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> step <span class="op">%</span> log_every <span class="op">==</span> <span class="dv">0</span> <span class="kw">or</span> step <span class="op">==</span> n_steps <span class="op">-</span> <span class="dv">1</span>:</span>
+<span id="cb16-41"><a href="#cb16-41" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f'Step </span><span class="sc">{</span>step<span class="sc">:3d}</span><span class="ss"> | loss: </span><span class="sc">{</span>loss<span class="sc">.</span>item()<span class="sc">:.4f}</span><span class="ss"> | accuracy: </span><span class="sc">{</span>acc<span class="sc">:.0%}</span><span class="ss">'</span>)</span>
+<span id="cb16-42"><a href="#cb16-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-43"><a href="#cb16-43" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'</span><span class="ch">\n</span><span class="ss">Final loss: </span><span class="sc">{</span>losses[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.4f}</span><span class="ss">, Final accuracy: </span><span class="sc">{</span>accuracies[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.0%}</span><span class="ss">'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Step   0 | loss: 2.0613 | accuracy: 0%
+Step  10 | loss: 1.1334 | accuracy: 80%
+Step  20 | loss: 0.6645 | accuracy: 80%
+Step  30 | loss: 0.4413 | accuracy: 80%
+Step  40 | loss: 0.3564 | accuracy: 80%
+Step  50 | loss: 0.3237 | accuracy: 80%
+Step  60 | loss: 0.3089 | accuracy: 80%
+Step  70 | loss: 0.3011 | accuracy: 80%
+Step  80 | loss: 0.2964 | accuracy: 80%
+Step  90 | loss: 0.2932 | accuracy: 80%
+Step 100 | loss: 0.2908 | accuracy: 80%
+Step 110 | loss: 0.2890 | accuracy: 80%
+Step 120 | loss: 0.2875 | accuracy: 80%
+Step 130 | loss: 0.2864 | accuracy: 80%
+Step 140 | loss: 0.2854 | accuracy: 80%
+Step 150 | loss: 0.2846 | accuracy: 80%
+Step 160 | loss: 0.2839 | accuracy: 80%
+Step 170 | loss: 0.2833 | accuracy: 80%
+Step 180 | loss: 0.2827 | accuracy: 80%
+Step 190 | loss: 0.2823 | accuracy: 80%
+Step 199 | loss: 0.2819 | accuracy: 80%
+
+Final loss: 0.2819, Final accuracy: 80%</code></pre>
+</div>
+</div>
+</section>
+<section id="loss-accuracy-over-training" class="level2">
+<h2 class="anchored" data-anchor-id="loss-accuracy-over-training">6. Loss &amp; Accuracy Over Training</h2>
+<p>Loss measures how surprised the model is by the correct answer (cross-entropy). It starts high (random guessing over 8 tokens → loss ≈ ln(8) ≈ 2.08) and drops as the model learns the patterns.</p>
+<div id="cell-15" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:32.579633Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:32.579438Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:32.691532Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:32.691060Z&quot;}}" data-execution_count="9">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>fig, (ax1, ax2) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">5</span>))</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Loss curve</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>ax1.plot(losses, color<span class="op">=</span><span class="st">'#FF6B6B'</span>, linewidth<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>ax1.axhline(y<span class="op">=</span>np.log(<span class="bu">len</span>(VOCAB)), color<span class="op">=</span><span class="st">'#94A3B8'</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, label<span class="op">=</span><span class="ss">f'Random guess (ln(</span><span class="sc">{</span><span class="bu">len</span>(VOCAB)<span class="sc">}</span><span class="ss">) = </span><span class="sc">{</span>np<span class="sc">.</span>log(<span class="bu">len</span>(VOCAB))<span class="sc">:.2f}</span><span class="ss">)'</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>ax1.set_xlabel(<span class="st">'Training Step'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>ax1.set_ylabel(<span class="st">'Loss (cross-entropy)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>ax1.set_title(<span class="st">'Training Loss'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>ax1.legend(fontsize<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>ax1.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Mark snapshot steps</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s, _ <span class="kw">in</span> snapshots:</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    ax1.axvline(x<span class="op">=</span>s, color<span class="op">=</span><span class="st">'#C4B5FD'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, linestyle<span class="op">=</span><span class="st">':'</span>)</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Accuracy curve</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>ax2.plot(accuracies, color<span class="op">=</span><span class="st">'#4ECDC4'</span>, linewidth<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>ax2.axhline(y<span class="op">=</span><span class="fl">1.0</span>, color<span class="op">=</span><span class="st">'#94A3B8'</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, label<span class="op">=</span><span class="st">'Perfect (100%)'</span>)</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>ax2.set_xlabel(<span class="st">'Training Step'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>ax2.set_ylabel(<span class="st">'Next-Token Accuracy'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>ax2.set_title(<span class="st">'Training Accuracy'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>ax2.set_ylim(<span class="op">-</span><span class="fl">0.05</span>, <span class="fl">1.1</span>)</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>ax2.yaxis.set_major_formatter(plt.FuncFormatter(<span class="kw">lambda</span> y, _: <span class="ss">f'</span><span class="sc">{</span>y<span class="sc">:.0%}</span><span class="ss">'</span>))</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>ax2.legend(fontsize<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>ax2.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="00_transformer_overview_rendered_files/figure-html/cell-10-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="predictions-at-each-training-step" class="level2">
+<h2 class="anchored" data-anchor-id="predictions-at-each-training-step">7. Predictions at Each Training Step</h2>
+<p>Watch the model go from random guessing to confident correct predictions. We trace the first sentence: <code>"the cat sat on the mat"</code>.</p>
+<div id="cell-17" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:32.693297Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:32.693133Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:32.980477Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:32.980012Z&quot;}}" data-execution_count="10">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>input_tokens <span class="op">=</span> [id2tok[j.item()] <span class="cf">for</span> j <span class="kw">in</span> train_x[<span class="dv">0</span>]]</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>target_tokens <span class="op">=</span> [id2tok[j.item()] <span class="cf">for</span> j <span class="kw">in</span> train_y[<span class="dv">0</span>]]</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="bu">len</span>(snapshots), <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">3</span> <span class="op">*</span> <span class="bu">len</span>(snapshots)))</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> idx, (step, snap) <span class="kw">in</span> <span class="bu">enumerate</span>(snapshots):</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    ax <span class="op">=</span> axes[idx]</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    positions <span class="op">=</span> <span class="bu">range</span>(<span class="bu">len</span>(input_tokens))</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Build heatmap data: (n_positions, vocab_size) but only show top predictions</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    bars_correct <span class="op">=</span> []</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    bars_wrong <span class="op">=</span> []</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    labels <span class="op">=</span> []</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, preds <span class="kw">in</span> <span class="bu">enumerate</span>(snap):</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>        target <span class="op">=</span> target_tokens[i]</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>        top_word, top_prob <span class="op">=</span> preds[<span class="dv">0</span>]</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>        correct <span class="op">=</span> (top_word <span class="op">==</span> target)</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>        bars_correct.append(top_prob <span class="cf">if</span> correct <span class="cf">else</span> <span class="dv">0</span>)</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>        bars_wrong.append(top_prob <span class="cf">if</span> <span class="kw">not</span> correct <span class="cf">else</span> <span class="dv">0</span>)</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>        pred_str <span class="op">=</span> <span class="st">', '</span>.join(<span class="ss">f'</span><span class="sc">{</span>w<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>p<span class="sc">:.0%}</span><span class="ss">)'</span> <span class="cf">for</span> w, p <span class="kw">in</span> preds[:<span class="dv">2</span>])</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>        labels.append(pred_str)</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> np.arange(<span class="bu">len</span>(input_tokens))</span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>    ax.bar(x, bars_correct, color<span class="op">=</span><span class="st">'#4ECDC4'</span>, label<span class="op">=</span><span class="st">'Correct'</span>, width<span class="op">=</span><span class="fl">0.6</span>)</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>    ax.bar(x, bars_wrong, color<span class="op">=</span><span class="st">'#FF6B6B'</span>, label<span class="op">=</span><span class="st">'Wrong'</span>, width<span class="op">=</span><span class="fl">0.6</span>)</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Annotate</span></span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, label <span class="kw">in</span> <span class="bu">enumerate</span>(labels):</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>        ax.text(i, <span class="bu">max</span>(bars_correct[i], bars_wrong[i]) <span class="op">+</span> <span class="fl">0.02</span>, label,</span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>                ha<span class="op">=</span><span class="st">'center'</span>, va<span class="op">=</span><span class="st">'bottom'</span>, fontsize<span class="op">=</span><span class="dv">9</span>, rotation<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>    ax.set_xticks(x)</span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>    ax.set_xticklabels([<span class="ss">f'After "</span><span class="sc">{</span>t<span class="sc">}</span><span class="ss">"</span><span class="ch">\n</span><span class="ss">(expect "</span><span class="sc">{</span>target_tokens[i]<span class="sc">}</span><span class="ss">")'</span></span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>                        <span class="cf">for</span> i, t <span class="kw">in</span> <span class="bu">enumerate</span>(input_tokens)], fontsize<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="dv">0</span>, <span class="fl">1.3</span>)</span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="st">'Top prediction confidence'</span>)</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="ss">f'Step </span><span class="sc">{</span>step<span class="sc">}</span><span class="ss">'</span>, fontsize<span class="op">=</span><span class="dv">13</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>, loc<span class="op">=</span><span class="st">'left'</span>)</span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>    ax.legend(loc<span class="op">=</span><span class="st">'upper right'</span>, fontsize<span class="op">=</span><span class="dv">9</span>)</span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>    ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.2</span>, axis<span class="op">=</span><span class="st">'y'</span>)</span>
+<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a>plt.suptitle(<span class="st">'Model Predictions Over Training: "the cat sat on the mat"'</span>,</span>
+<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>             fontsize<span class="op">=</span><span class="dv">15</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>, y<span class="op">=</span><span class="fl">1.01</span>)</span>
+<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="00_transformer_overview_rendered_files/figure-html/cell-11-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="what-did-the-model-learn" class="level2">
+<h2 class="anchored" data-anchor-id="what-did-the-model-learn">8. What Did the Model Learn?</h2>
+<p>Let’s look at the final probability distribution at each position. A well-trained model should be confident about deterministic positions (<code>the</code> → always followed by <code>cat</code> or <code>dog</code>) and uncertain where multiple options are valid.</p>
+<div id="cell-19" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:32.982799Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:32.982705Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:33.191204Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:33.190725Z&quot;}}" data-execution_count="11">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>model.<span class="bu">eval</span>()</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">16</span>, <span class="dv">8</span>))</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>axes <span class="op">=</span> axes.flatten()</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>sentence <span class="op">=</span> <span class="st">'the cat sat on the'</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>tokens_viz <span class="op">=</span> tokenize(sentence)</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>token_ids_viz <span class="op">=</span> torch.tensor([tokens_viz], device<span class="op">=</span>device)</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    logits_viz <span class="op">=</span> model(token_ids_viz)</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    probs_viz <span class="op">=</span> F.softmax(logits_viz[<span class="dv">0</span>], dim<span class="op">=-</span><span class="dv">1</span>)</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, ax <span class="kw">in</span> <span class="bu">enumerate</span>(axes[:<span class="bu">len</span>(tokens_viz)]):</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    p <span class="op">=</span> probs_viz[i].cpu().numpy()</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>    colors <span class="op">=</span> [<span class="st">'#4ECDC4'</span> <span class="cf">if</span> j <span class="op">==</span> (tokens_viz[i<span class="op">+</span><span class="dv">1</span>] <span class="cf">if</span> i<span class="op">+</span><span class="dv">1</span> <span class="op">&lt;</span> <span class="bu">len</span>(tokens_viz) <span class="cf">else</span> <span class="op">-</span><span class="dv">1</span>)</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>              <span class="cf">else</span> <span class="st">'#E2E8F0'</span> <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(VOCAB))]</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    ax.barh(<span class="bu">range</span>(<span class="bu">len</span>(VOCAB)), p, color<span class="op">=</span>colors)</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>    ax.set_yticks(<span class="bu">range</span>(<span class="bu">len</span>(VOCAB)))</span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>    ax.set_yticklabels(VOCAB, fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>    ax.set_xlim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">'Probability'</span>, fontsize<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>    ax.set_title(<span class="ss">f'After "</span><span class="sc">{</span>id2tok[tokens_viz[i]]<span class="sc">}</span><span class="ss">" (pos </span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>    ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.2</span>, axis<span class="op">=</span><span class="st">'x'</span>)</span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Last subplot: show prediction for the full sequence</span></span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="bu">len</span>(tokens_viz)]</span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a>p <span class="op">=</span> probs_viz[<span class="op">-</span><span class="dv">1</span>].cpu().numpy()</span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a>colors <span class="op">=</span> [<span class="st">'#4ECDC4'</span> <span class="cf">if</span> VOCAB[j] <span class="op">==</span> <span class="st">'mat'</span> <span class="cf">else</span> <span class="st">'#E2E8F0'</span> <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(VOCAB))]</span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a>ax.barh(<span class="bu">range</span>(<span class="bu">len</span>(VOCAB)), p, color<span class="op">=</span>colors)</span>
+<span id="cb20-31"><a href="#cb20-31" aria-hidden="true" tabindex="-1"></a>ax.set_yticks(<span class="bu">range</span>(<span class="bu">len</span>(VOCAB)))</span>
+<span id="cb20-32"><a href="#cb20-32" aria-hidden="true" tabindex="-1"></a>ax.set_yticklabels(VOCAB, fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb20-33"><a href="#cb20-33" aria-hidden="true" tabindex="-1"></a>ax.set_xlim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb20-34"><a href="#cb20-34" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'Probability'</span>, fontsize<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb20-35"><a href="#cb20-35" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="ss">f'After "the" (pos </span><span class="sc">{</span><span class="bu">len</span>(tokens_viz)<span class="op">-</span><span class="dv">1</span><span class="sc">}</span><span class="ss">)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb20-36"><a href="#cb20-36" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.2</span>, axis<span class="op">=</span><span class="st">'x'</span>)</span>
+<span id="cb20-37"><a href="#cb20-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-38"><a href="#cb20-38" aria-hidden="true" tabindex="-1"></a>plt.suptitle(<span class="st">'Learned Probability Distributions at Each Position'</span>,</span>
+<span id="cb20-39"><a href="#cb20-39" aria-hidden="true" tabindex="-1"></a>             fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb20-40"><a href="#cb20-40" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb20-41"><a href="#cb20-41" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb20-42"><a href="#cb20-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-43"><a href="#cb20-43" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Green = correct next token.'</span>)</span>
+<span id="cb20-44"><a href="#cb20-44" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Notice: after "the" the model may assign probability to both "cat" and "dog"'</span>)</span>
+<span id="cb20-45"><a href="#cb20-45" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'because both are valid continuations in our training data.'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="00_transformer_overview_rendered_files/figure-html/cell-12-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Green = correct next token.
+Notice: after "the" the model may assign probability to both "cat" and "dog"
+because both are valid continuations in our training data.</code></pre>
+</div>
+</div>
+</section>
+<section id="generate-new-text" class="level2">
+<h2 class="anchored" data-anchor-id="generate-new-text">9. Generate New Text</h2>
+<p>Let’s use the trained model to generate text autoregressively. Starting from <code>"the"</code>, the model picks the next token, appends it, and repeats — using the KV cache for efficiency (see <code>inference/generate.py</code>).</p>
+<div id="cell-21" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-04-07T02:35:33.192545Z&quot;,&quot;iopub.status.busy&quot;:&quot;2026-04-07T02:35:33.192451Z&quot;,&quot;iopub.status.idle&quot;:&quot;2026-04-07T02:35:33.206858Z&quot;,&quot;shell.execute_reply&quot;:&quot;2026-04-07T02:35:33.206402Z&quot;}}" data-execution_count="12">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_tiny(model, prompt, max_tokens<span class="op">=</span><span class="dv">6</span>, temperature<span class="op">=</span><span class="fl">0.8</span>):</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Simple autoregressive generation for our tiny model.</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="co">    At each step:</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="co">    1. Forward pass → logits (concept 14)</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="co">    2. Softmax + temperature → probabilities (concept 15)</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="co">    3. Sample next token</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="co">    4. Append and repeat</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="co">    Reference: "The Curious Case of Neural Text Degeneration" (Holtzman et al., 2020)</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="co">    https://arxiv.org/abs/1904.09751</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>    model.<span class="bu">eval</span>()</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>    tokens <span class="op">=</span> tokenize(prompt)</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'Prompt: "</span><span class="sc">{</span>prompt<span class="sc">}</span><span class="ss">"'</span>)</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'Token IDs: </span><span class="sc">{</span>tokens<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>()</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>    steps <span class="op">=</span> []</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> step <span class="kw">in</span> <span class="bu">range</span>(max_tokens):</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>        input_ids <span class="op">=</span> torch.tensor([tokens], device<span class="op">=</span>device)</span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>            logits <span class="op">=</span> model(input_ids)</span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Take logits at last position, apply temperature</span></span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>        next_logits <span class="op">=</span> logits[<span class="dv">0</span>, <span class="op">-</span><span class="dv">1</span>] <span class="op">/</span> temperature</span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>        probs <span class="op">=</span> F.softmax(next_logits, dim<span class="op">=-</span><span class="dv">1</span>)</span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Sample</span></span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>        next_id <span class="op">=</span> torch.multinomial(probs, <span class="dv">1</span>).item()</span>
+<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a>        next_word <span class="op">=</span> id2tok[next_id]</span>
+<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Log this step</span></span>
+<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a>        top3 <span class="op">=</span> probs.topk(<span class="dv">3</span>)</span>
+<span id="cb22-35"><a href="#cb22-35" aria-hidden="true" tabindex="-1"></a>        top3_str <span class="op">=</span> <span class="st">', '</span>.join(<span class="ss">f'</span><span class="sc">{</span>id2tok[j.item()]<span class="sc">}</span><span class="ss">(</span><span class="sc">{</span>p<span class="sc">:.0%}</span><span class="ss">)'</span> <span class="cf">for</span> p, j <span class="kw">in</span> <span class="bu">zip</span>(top3.values, top3.indices))</span>
+<span id="cb22-36"><a href="#cb22-36" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f'  Step </span><span class="sc">{</span>step<span class="op">+</span><span class="dv">1</span><span class="sc">}</span><span class="ss">: [</span><span class="sc">{</span><span class="st">" "</span><span class="sc">.</span>join(id2tok[t] <span class="cf">for</span> t <span class="kw">in</span> tokens)<span class="sc">}</span><span class="ss">] → </span><span class="sc">{</span>top3_str<span class="sc">}</span><span class="ss"> → picked "</span><span class="sc">{</span>next_word<span class="sc">}</span><span class="ss">"'</span>)</span>
+<span id="cb22-37"><a href="#cb22-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-38"><a href="#cb22-38" aria-hidden="true" tabindex="-1"></a>        tokens.append(next_id)</span>
+<span id="cb22-39"><a href="#cb22-39" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> next_id <span class="op">==</span> tok2id.get(<span class="st">'&lt;eos&gt;'</span>, <span class="op">-</span><span class="dv">1</span>):</span>
+<span id="cb22-40"><a href="#cb22-40" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb22-41"><a href="#cb22-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-42"><a href="#cb22-42" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> detokenize(tokens)</span>
+<span id="cb22-43"><a href="#cb22-43" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f'</span><span class="ch">\n</span><span class="ss">Generated: "</span><span class="sc">{</span>result<span class="sc">}</span><span class="ss">"'</span>)</span>
+<span id="cb22-44"><a href="#cb22-44" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> result</span>
+<span id="cb22-45"><a href="#cb22-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-46"><a href="#cb22-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate a few sequences</span></span>
+<span id="cb22-47"><a href="#cb22-47" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> prompt <span class="kw">in</span> [<span class="st">'the'</span>, <span class="st">'the dog'</span>, <span class="st">'the cat sat'</span>]:</span>
+<span id="cb22-48"><a href="#cb22-48" aria-hidden="true" tabindex="-1"></a>    generate_tiny(model, prompt)</span>
+<span id="cb22-49"><a href="#cb22-49" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Prompt: "the"
+Token IDs: [1]
+
+  Step 1: [the] → dog(50%), cat(50%), &lt;pad&gt;(0%) → picked "cat"
+  Step 2: [the cat] → sat(50%), ran(50%), &lt;pad&gt;(0%) → picked "ran"
+  Step 3: [the cat ran] → on(100%), the(0%), mat(0%) → picked "on"
+  Step 4: [the cat ran on] → the(100%), &lt;pad&gt;(0%), on(0%) → picked "the"
+  Step 5: [the cat ran on the] → mat(100%), &lt;pad&gt;(0%), on(0%) → picked "mat"
+  Step 6: [the cat ran on the mat] → the(100%), &lt;pad&gt;(0%), mat(0%) → picked "the"
+
+Generated: "the cat ran on the mat the"
+
+Prompt: "the dog"
+Token IDs: [1, 3]
+
+  Step 1: [the dog] → ran(50%), sat(50%), &lt;pad&gt;(0%) → picked "sat"
+  Step 2: [the dog sat] → on(100%), the(0%), mat(0%) → picked "on"
+  Step 3: [the dog sat on] → the(100%), &lt;pad&gt;(0%), on(0%) → picked "the"
+  Step 4: [the dog sat on the] → mat(100%), &lt;pad&gt;(0%), on(0%) → picked "mat"
+  Step 5: [the dog sat on the mat] → the(100%), &lt;pad&gt;(0%), mat(0%) → picked "the"
+  Step 6: [the dog sat on the mat the] → mat(100%), cat(0%), &lt;pad&gt;(0%) → picked "mat"
+
+Generated: "the dog sat on the mat the mat"
+
+Prompt: "the cat sat"
+Token IDs: [1, 2, 4]
+
+  Step 1: [the cat sat] → on(100%), the(0%), mat(0%) → picked "on"
+  Step 2: [the cat sat on] → the(100%), &lt;pad&gt;(0%), on(0%) → picked "the"
+  Step 3: [the cat sat on the] → mat(100%), &lt;pad&gt;(0%), on(0%) → picked "mat"
+  Step 4: [the cat sat on the mat] → the(100%), &lt;pad&gt;(0%), mat(0%) → picked "the"
+  Step 5: [the cat sat on the mat the] → mat(100%), cat(0%), &lt;pad&gt;(0%) → picked "mat"
+  Step 6: [the cat sat on the mat the mat] → the(97%), ran(1%), sat(1%) → picked "ran"
+
+Generated: "the cat sat on the mat the mat ran"
+</code></pre>
+</div>
+</div>
+</section>
+<section id="key-takeaways" class="level2">
+<h2 class="anchored" data-anchor-id="key-takeaways">Key Takeaways</h2>
+<ol type="1">
+<li><p><strong>The model learns by predicting the next token</strong> — at every position, simultaneously. The loss (cross-entropy) measures how surprised the model is by the correct answer.</p></li>
+<li><p><strong>Training is just repeated forward pass → loss → backward pass → update weights.</strong> Each step nudges the model’s parameters to make correct predictions more likely (<a href="https://arxiv.org/abs/1711.05101">AdamW optimizer</a>).</p></li>
+<li><p><strong>The architecture is simple</strong>: embedding → N × (attention + FFN) → output head. Everything else (norms, residuals, RoPE) makes this trainable and efficient.</p></li>
+<li><p><strong>Generation is autoregressive</strong>: predict one token, append it, repeat. The model only “sees” tokens before the current position (causal mask).</p></li>
+<li><p><strong>This tiny model uses the exact same code</strong> as larger configs — only the numbers (dim, n_layers, vocab_size) change. See <code>src/ai_playground/models/config.py</code> for TINY/SMALL/MEDIUM presets.</p></li>
+</ol>
+<p>For the full concept stack (1–15), see the annotated <code>src/ai_playground/models/transformer.py</code>.</p>
+<section id="reading-list" class="level3">
+<h3 class="anchored" data-anchor-id="reading-list">Reading list</h3>
+<ul>
+<li><a href="https://arxiv.org/abs/1706.03762">“Attention Is All You Need”</a> — the original transformer paper</li>
+<li><a href="https://nlp.seas.harvard.edu/annotated-transformer/">The Annotated Transformer</a> — line-by-line walkthrough</li>
+<li><a href="../../docs/PAPERS.md">docs/PAPERS.md</a> — all papers referenced in this codebase</li>
+</ul>
+</section>
+<section id="next-01_attention_mechanisms.ipynb-deep-dive-into-mha-gqa-mqa-with-benchmarks" class="level3">
+<h3 class="anchored" data-anchor-id="next-01_attention_mechanisms.ipynb-deep-dive-into-mha-gqa-mqa-with-benchmarks">Next: <code>01_attention_mechanisms.ipynb</code> — deep dive into MHA, GQA, MQA with benchmarks</h3>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

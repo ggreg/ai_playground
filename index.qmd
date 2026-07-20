@@ -12,6 +12,7 @@ Source code lives at [github.com/ggreg/ai_playground](https://github.com/ggreg/a
 - **[Concepts FAQ](docs/CONCEPTS.md)** — deep dives on embeddings, cross-entropy, bias, and other conceptual questions
 - **[Papers](docs/PAPERS.md)** — key papers organized by topic with summaries
 - **[Videos](docs/VIDEOS.md)** — curated videos matched to each module (3Blue1Brown, Karpathy, GPU MODE, and more)
+- **[The Project](docs/PROJECT.md)** — the capstone thread: every chapter's 🏗️ milestone builds toward training your own LLM and serving it on the mini-vLLM engine
 
 ## Notebooks
 
