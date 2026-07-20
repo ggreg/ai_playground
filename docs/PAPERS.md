@@ -165,3 +165,37 @@ Papers referenced throughout this codebase, organized by topic. Each entry inclu
 - **Programmatic Dependent Launch and Async Copy on Ampere** (NVIDIA Programming Guide)
   The `cp.async.ca.shared.global` instruction (Ampere SM_80+) lets a thread asynchronously copy from global memory directly into shared memory, bypassing the register file and freeing the SM to run independent compute while the load completes. Combined with `cp.async.commit_group` / `cp.async.wait_group`, this is what makes software pipelining of GEMM tiles practical without occupying registers as a load buffer. Salykova's `128x256x8` kernel relies on this.
   [Async copy docs](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async) · [PTX guide](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-copy)
+
+## Agents
+
+- **ReAct: Synergizing Reasoning and Acting in Language Models** (Yao et al., 2022)
+  Introduces the alternating reason → act → observe loop that nearly every modern agent uses. Showed that interleaving free-form reasoning ("thoughts") with tool calls outperforms both pure chain-of-thought and pure tool calling on reasoning-heavy benchmarks. The core loop in `agents/agent.py` is a direct implementation.
+  [Paper](https://arxiv.org/abs/2210.03629) · [Code](https://github.com/ysymyth/ReAct)
+
+- **Toolformer: Language Models Can Teach Themselves to Use Tools** (Schick et al., 2023)
+  First end-to-end demonstration that LMs can be fine-tuned to call APIs by self-supervised generation of tool-use traces. Pre-dates the structured tool-use APIs from OpenAI/Anthropic but shows the same idea: tool calling is a learnable text-generation pattern, not a special architectural feature.
+  [Paper](https://arxiv.org/abs/2302.04761)
+
+- **Reflexion: Language Agents with Verbal Reinforcement Learning** (Shinn et al., 2023)
+  Adds a "reflect on failure, write notes, try again" loop on top of a base agent. The reflections accumulate as natural-language hints fed back into subsequent attempts. Gets dramatic improvements on coding/reasoning benchmarks at the cost of more LLM calls per task. Our `planner.py` supports an optional reflection step in the same spirit.
+  [Paper](https://arxiv.org/abs/2303.11366) · [Code](https://github.com/noahshinn/reflexion)
+
+- **MemGPT: Towards LLMs as Operating Systems** (Packer et al., 2023)
+  Frames context-window management as virtual memory with explicit page-in/page-out function calls. The agent itself decides what to keep in working memory vs offload to recall storage. More principled than naive truncation; our `memory.py` implements a simpler version of the same two-tier idea.
+  [Paper](https://arxiv.org/abs/2310.08560) · [Code](https://github.com/cpacker/MemGPT)
+
+- **Generative Agents: Interactive Simulacra of Human Behavior** (Park et al., 2023)
+  The "Smallville" demo: 25 agents with rich memory streams, reflection, and planning living in a simulated town. Notable for the memory architecture (importance-weighted retrieval + periodic high-level reflections that summarize recent memories into beliefs).
+  [Paper](https://arxiv.org/abs/2304.03442) · [Code](https://github.com/joonspk-research/generative_agents)
+
+- **AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation** (Wu et al., 2023)
+  Microsoft's framework for multi-agent setups, formalising the "agents talking to agents" pattern. Our `multi_agent.py` is a much-stripped-down version: a supervisor that routes work to specialized workers based on their descriptions.
+  [Paper](https://arxiv.org/abs/2308.08155) · [Code](https://github.com/microsoft/autogen)
+
+- **Voyager: An Open-Ended Embodied Agent with Large Language Models** (Wang et al., 2023)
+  LLM agent playing Minecraft. Notable for the "skill library" idea: every successfully written code snippet (the agent acts via code generation) gets stored, indexed, and reused later. A nice example of long-term *procedural* memory, distinct from the factual long-term memory in our `VectorMemory`.
+  [Paper](https://arxiv.org/abs/2305.16291) · [Code](https://github.com/MineDojo/Voyager)
+
+- **Building Effective Agents** (Anthropic, 2024)
+  Engineering-focused blog post rather than a paper, but the most useful single read on agent design. Argues for simple, composable patterns over heavyweight frameworks. Covers the building blocks: augmented LLMs, prompt chaining, routing, parallelization, orchestrator-worker, evaluator-optimizer, agents.
+  [Post](https://www.anthropic.com/research/building-effective-agents)

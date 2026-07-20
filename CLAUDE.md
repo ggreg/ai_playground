@@ -50,6 +50,14 @@ uv run python scripts/benchmark.py --config configs/tiny.yaml
 - `memory.py` — `MemoryTracker`, `track_memory` context manager
 - `nsight.py` — NVTX range markers, PyTorch profiler wrapper
 
+**Agents** in `src/ai_playground/agents/` (optional extra: `uv sync --extra agents`):
+- `llm.py` — `LLMBackend` protocol with `ClaudeBackend` (Anthropic API) and `LocalTransformerBackend` (this repo's tiny transformer)
+- `tools.py` — `Tool` dataclass, `ToolRegistry`, builtin tools (file I/O, calculator, shell, web fetch)
+- `memory.py` — `ConversationMemory` (bounded + optional summarization), `VectorMemory` (similarity-search long-term store)
+- `agent.py` — `Agent` ReAct loop — model + tools + memory in <100 lines
+- `planner.py` — `PlanAndExecute` for multi-step decomposition; optional reflection
+- `multi_agent.py` — `Supervisor` + `Worker` orchestration
+
 **Documentation** in `docs/`:
 - `LEARNING_PATH.md` — 5-phase curriculum from internals to GPU tools
 - `PAPERS.md` — Key papers organized by topic with links and summaries
@@ -82,6 +90,7 @@ Notebooks live in `notebooks/` organized by topic module:
 - `03_distributed_training/` — multi-GPU and multi-node
 - `04_inference_optimization/` — serving and generation speed
 - `05_gpu_nvidia_tools/` — CUDA, Triton, profiling tools
+- `06_agents/` — building LLM agents from scratch (tool use, memory, planning)
 
 Each notebook should:
 1. Start with a markdown cell explaining what we're exploring and why it matters

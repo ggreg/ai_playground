@@ -110,3 +110,32 @@ Squeeze maximum performance from hardware.
     - Target: 40-60% on modern GPUs
 
 **Milestone**: You can profile, diagnose, and fix GPU performance bottlenecks.
+
+## Phase 6: Building AI Agents
+
+Move up the stack: instead of training and serving a model, *use* one in a loop with tools, memory, and planning. This is the layer most "AI products" actually live at.
+
+20. **What is an agent?** — `notebooks/06_agents/00_what_is_an_agent.ipynb`
+    - The ReAct loop in <20 lines from scratch
+    - Why tool calling is just structured text + parser
+    - Code: `src/ai_playground/agents/agent.py`
+    - Paper: [ReAct (Yao et al., 2022)](https://arxiv.org/abs/2210.03629)
+
+21. **Tool use** — `notebooks/06_agents/01_tool_use.ipynb`
+    - Tool anatomy (name + description + JSON schema + callable)
+    - Tool registry and dispatch with graceful error reporting
+    - Trade-offs: tool granularity, security, idempotency
+    - Code: `src/ai_playground/agents/tools.py`
+
+22. **Memory systems** — `notebooks/06_agents/02_memory.ipynb`
+    - Working memory (bounded conversation + summarization)
+    - Long-term memory (vector store + similarity retrieval)
+    - Code: `src/ai_playground/agents/memory.py`
+    - Paper: [MemGPT (Packer et al., 2023)](https://arxiv.org/abs/2310.08560)
+
+23. **Planning & multi-agent** — `src/ai_playground/agents/planner.py`, `multi_agent.py`
+    - Plan-and-execute vs ReAct
+    - Supervisor/worker orchestration (researcher + writer + critic)
+    - Paper: [AutoGen (Wu et al., 2023)](https://arxiv.org/abs/2308.08155)
+
+**Milestone**: You can design and build an agent for a real task (e.g. a research assistant, a code reviewer, a triage bot) and know where the failure modes live.

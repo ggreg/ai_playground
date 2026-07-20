@@ -21,6 +21,10 @@ gpu = [
     "flash-attn",
     "bitsandbytes",
 ]
+agents = [
+    "anthropic>=0.40",
+    "httpx",
+]
 dev = [
     "pytest",
     "ruff",
