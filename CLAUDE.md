@@ -50,6 +50,12 @@ uv run python scripts/benchmark.py --config configs/tiny.yaml
 - `memory.py` — `MemoryTracker`, `track_memory` context manager
 - `nsight.py` — NVTX range markers, PyTorch profiler wrapper
 
+**Fundamentals** in `src/ai_playground/fundamentals/` (the DNN refresher's teaching code):
+- `autograd.py` — micrograd-style scalar `Value` with `.backward()` (reverse-mode autodiff)
+- `nn.py` — `Neuron`/`Layer`/`MLP` over `Value` (biases on purpose — see module docstring)
+- `datasets.py` — `make_moons`, `make_spiral` toy datasets (numpy-only)
+- `viz.py` — `plot_decision_boundary`
+
 **Agents** in `src/ai_playground/agents/` (optional extra: `uv sync --extra agents`):
 - `llm.py` — `LLMBackend` protocol with `ClaudeBackend` (Anthropic API) and `LocalTransformerBackend` (this repo's tiny transformer)
 - `tools.py` — `Tool` dataclass, `ToolRegistry`, builtin tools (file I/O, calculator, shell, web fetch)
@@ -59,7 +65,7 @@ uv run python scripts/benchmark.py --config configs/tiny.yaml
 - `multi_agent.py` — `Supervisor` + `Worker` orchestration
 
 **Documentation** in `docs/`:
-- `LEARNING_PATH.md` — 6-phase curriculum from internals to agents
+- `LEARNING_PATH.md` — curriculum from DNN fundamentals to agents (Phases 0–6)
 - `PAPERS.md` — Key papers organized by topic with links and summaries
 - `CONCEPTS.md` — FAQ-style deep dives on conceptual questions (embeddings, cross-entropy, bias, etc.). When the user asks a substantive conceptual question that would benefit future readers, add the answer here following the existing Q&A format.
 
@@ -85,6 +91,7 @@ This is a learning repository. When adding or modifying code:
 ## Notebook Conventions
 
 Notebooks live in `notebooks/` organized by topic module:
+- `00_dnn_refresher/` — neural-network fundamentals (MLPs, backprop, training loop, cross-entropy)
 - `01_transformer_internals/` — model architecture components
 - `02_training_optimization/` — training efficiency techniques
 - `03_distributed_training/` — multi-GPU and multi-node

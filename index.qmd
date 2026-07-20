@@ -10,8 +10,10 @@ Source code lives at [github.com/ggreg/ai_playground](https://github.com/ggreg/a
 Every chapter of this book ends with a milestone toward one goal: **design and train your own
 small LLM, then serve it through the mini-vLLM inference engine you build** — paged KV cache,
 continuous batching, your model's text through your own engine. The milestone map is on
-[The Project](docs/PROJECT.md) page; it starts with M1 in the
-[Transformer Overview](notebooks/01_transformer_internals/00_transformer_overview.ipynb).
+[The Project](docs/PROJECT.md) page; it starts with M0 in the
+[DNN Refresher](notebooks/00_dnn_refresher/03_softmax_crossentropy.ipynb) (or M1 in the
+[Transformer Overview](notebooks/01_transformer_internals/00_transformer_overview.ipynb) if
+you skip the refresher).
 :::
 
 ## Start here
@@ -29,6 +31,7 @@ or open any chapter on a free GPU via its *Open in Colab* badge:
 
 | Module | Chapters |
 |--------|----------|
+| DNN Refresher | [Neurons & MLPs](notebooks/00_dnn_refresher/00_neurons_and_mlps.ipynb) · [Backprop & Micrograd](notebooks/00_dnn_refresher/01_backprop_micrograd.ipynb) · [The Training Loop](notebooks/00_dnn_refresher/02_training_loop.ipynb) · [Softmax & Cross-Entropy](notebooks/00_dnn_refresher/03_softmax_crossentropy.ipynb) |
 | Transformer Internals | [Transformer Overview](notebooks/01_transformer_internals/00_transformer_overview.ipynb) · [Attention Mechanisms](notebooks/01_transformer_internals/01_attention_mechanisms.ipynb) (MHA/GQA/MQA) · [Mixture of Experts](notebooks/01_transformer_internals/02_mixture_of_experts.ipynb) |
 | Training Optimization | [Training From Scratch](notebooks/02_training_optimization/00_training_from_scratch.ipynb) · [Learning Rate Schedules](notebooks/02_training_optimization/01_learning_rate_schedules.ipynb) · [Mixed Precision](notebooks/02_training_optimization/02_mixed_precision.ipynb) · [Gradient Accumulation](notebooks/02_training_optimization/03_gradient_accumulation.ipynb) · [AdamW From Scratch](notebooks/02_training_optimization/04_adamw_from_scratch.ipynb) |
 | Inference Optimization | [Build a Mini vLLM](notebooks/04_inference_optimization/00_mini_vllm.ipynb) — paged KV cache, PagedAttention, continuous batching |

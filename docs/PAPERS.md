@@ -2,6 +2,20 @@
 
 Papers referenced throughout this codebase, organized by topic. Each entry includes a summary, links to the paper, official code, and documentation where available.
 
+## Foundations
+
+- **Learning representations by back-propagating errors** (Rumelhart, Hinton & Williams, 1986)
+  The paper that made deep learning trainable: reverse-mode differentiation through a computation graph delivers the gradient of one scalar loss with respect to every weight at ~the cost of a forward pass. `src/ai_playground/fundamentals/autograd.py` implements it at scalar scale; `loss.backward()` is the same algorithm over tensors.
+  [Paper](https://doi.org/10.1038/323533a0)
+
+- **Approximation by Superpositions of a Sigmoidal Function** (Cybenko, 1989)
+  Universal approximation: one hidden layer of sigmoidal units can approximate any continuous function on a compact set. Explains why capacity is never the question for MLPs — trainability and efficiency are (depth composes features more cheaply than width buys them).
+  [Paper](https://doi.org/10.1007/BF02551274)
+
+- **Understanding the difficulty of training deep feedforward neural networks** (Glorot & Bengio, 2010)
+  Why initialization scale matters: keep activation and gradient variance roughly constant across layers, giving the 1/√n_in weight scaling used in `fundamentals/nn.py`. The reasoning previews every later normalization trick (LayerNorm, RMSNorm).
+  [Paper](https://proceedings.mlr.press/v9/glorot10a.html)
+
 ## Tokenization
 
 - **Neural Machine Translation of Rare Words with Subword Units** (Sennrich et al., 2016)

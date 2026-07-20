@@ -49,6 +49,16 @@ website:
             text: Cloud Setup
           - href: docs/PROGRESS_TEMPLATE.md
             text: Progress Template
+      - section: DNN Refresher
+        contents:
+          - href: notebooks/00_dnn_refresher/00_neurons_and_mlps.ipynb
+            text: Neurons & MLPs
+          - href: notebooks/00_dnn_refresher/01_backprop_micrograd.ipynb
+            text: Backprop & Micrograd
+          - href: notebooks/00_dnn_refresher/02_training_loop.ipynb
+            text: The Training Loop
+          - href: notebooks/00_dnn_refresher/03_softmax_crossentropy.ipynb
+            text: Softmax & Cross-Entropy
       - section: Transformer Internals
         contents:
           - href: notebooks/01_transformer_internals/00_transformer_overview.ipynb

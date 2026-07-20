@@ -2,6 +2,28 @@
 
 Curated videos matched to this repo's modules. Watching one before working through the corresponding notebook gives you the intuition; the notebook then makes it concrete in code. All links verified.
 
+## DNN Refresher (`notebooks/00_dnn_refresher/`)
+
+- **But what is a neural network? | Deep Learning Chapter 1** (3Blue1Brown)
+  Neurons, layers, and weights as a function machine — the visual version of the forward pass. Watch before `00_neurons_and_mlps.ipynb`.
+  [Watch](https://www.youtube.com/watch?v=aircAruvnKk)
+
+- **Gradient descent, how neural networks learn | Deep Learning Chapter 2** (3Blue1Brown)
+  The loss landscape and downhill steps, animated. Watch before `02_training_loop.ipynb`.
+  [Watch](https://www.youtube.com/watch?v=IHZwWFHWa-w)
+
+- **Backpropagation, intuitively | Deep Learning Chapter 3** (3Blue1Brown)
+  What the backward pass computes and why, with no calculus notation. Watch before `01_backprop_micrograd.ipynb`.
+  [Watch](https://www.youtube.com/watch?v=Ilg3gGewQ5U)
+
+- **Backpropagation calculus | Deep Learning Chapter 4** (3Blue1Brown)
+  The chain-rule bookkeeping behind chapter 3, including the cross-entropy derivative that `03_softmax_crossentropy.ipynb` re-derives in code.
+  [Watch](https://www.youtube.com/watch?v=tIeHLnjs5U8)
+
+- **The spelled-out intro to neural networks and backpropagation: building micrograd** (Andrej Karpathy)
+  Builds the exact engine of `01_backprop_micrograd.ipynb` in 2.5 hours of live code — `src/ai_playground/fundamentals/autograd.py` follows its design.
+  [Watch](https://www.youtube.com/watch?v=VMj-3S1tku0)
+
 ## Transformer Internals (`notebooks/01_transformer_internals/`)
 
 - **Transformers, the tech behind LLMs | Deep Learning Chapter 5** (3Blue1Brown)

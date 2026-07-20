@@ -1,6 +1,31 @@
 # Learning Path
 
-A suggested order for working through the AI playground, from LLM internals to GPU optimization.
+A suggested order for working through the AI playground, from LLM internals to GPU optimization. Phase 0 is an optional refresher — skip it if MLPs, backprop, and cross-entropy are already second nature.
+
+## Phase 0: DNN Refresher (optional)
+
+Neural-network fundamentals rebuilt from scratch, at a scale where every number is checkable by hand. Everything later assumes these.
+
+0.1. **Neurons, Layers, and the Forward Pass** — `notebooks/00_dnn_refresher/00_neurons_and_mlps.ipynb`
+   - A neuron is `w·x + b` + nonlinearity; a layer is a matmul
+   - Why stacked linear layers collapse; XOR by hand; universal approximation
+   - Code: `src/ai_playground/fundamentals/nn.py`, `datasets.py`
+
+0.2. **Backprop from Scratch: a Tiny Autograd Engine** — `notebooks/00_dnn_refresher/01_backprop_micrograd.ipynb`
+   - Chain rule on a computation graph; a micrograd-style `Value` class
+   - `grad +=` accumulation, topological order, the PyTorch bridge
+   - Code: `src/ai_playground/fundamentals/autograd.py`
+   - Paper: [Rumelhart, Hinton & Williams (1986)](https://doi.org/10.1038/323533a0)
+
+0.3. **The Training Loop: Gradient Descent to Minibatches** — `notebooks/00_dnn_refresher/02_training_loop.ipynb`
+   - forward → zero_grad → backward → step; learning-rate regimes
+   - Minibatch SGD; the same loop in PyTorch, with the wall-clock gap measured
+
+0.4. **Softmax, Cross-Entropy, and Your First Classifier** — `notebooks/00_dnn_refresher/03_softmax_crossentropy.ipynb`
+   - Temperature, subtract-max stability, the `p − y` gradient
+   - Why cross-entropy (not MSE) trains classifiers — and LLMs
+
+**Milestone**: You can derive and implement backprop by hand, and "train a network" means a specific five-line loop to you.
 
 ## Phase 1: Transformer Internals
 

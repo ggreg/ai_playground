@@ -17,7 +17,7 @@ stays local:
 checkpoints/myllm/
 ├── config.json      # your model's design (M1, refined in M2/M5/M6)
 ├── DECISIONS.md     # design decisions with numbers (M3, ...)
-├── metrics.json     # accumulating measurements (M5, M6, M9, M11, M12)
+├── metrics.json     # accumulating measurements (M0, M5, M6, M9, M11, M12)
 ├── step300.pt       # first trained checkpoint (M4)
 └── final.pt         # the release checkpoint you'll serve (M7)
 ```
@@ -34,6 +34,7 @@ WS.mkdir(parents=True, exist_ok=True)
 
 | # | Chapter | You build | Artifact |
 |---|---------|-----------|----------|
+| M0 | [Softmax & Cross-Entropy](../notebooks/00_dnn_refresher/03_softmax_crossentropy.ipynb) | An MLP classifier trained with your own autograd engine, gradients verified against PyTorch | `metrics.json` |
 | M1 | [Transformer Overview](../notebooks/01_transformer_internals/00_transformer_overview.ipynb) | Your model's config under a 2M-parameter budget | `config.json` |
 | M2 | [Attention Mechanisms](../notebooks/01_transformer_internals/01_attention_mechanisms.ipynb) | KV-cache budget → choose `n_kv_heads` (MHA/GQA/MQA) | updated `config.json` |
 | M3 | [Mixture of Experts](../notebooks/01_transformer_internals/02_mixture_of_experts.ipynb) | Dense-vs-MoE decision, with the serving cost spelled out | `DECISIONS.md` |

@@ -53,6 +53,7 @@ Interactive Jupyter notebooks organized by topic. Read them [on the website](htt
 
 | Module | Topics |
 |--------|--------|
+| `00_dnn_refresher/` | Neurons & MLPs, micrograd-style autograd, the training loop, softmax & cross-entropy |
 | `01_transformer_internals/` | Attention (MHA/GQA/MQA), positional encodings, activations, normalization, tokenizers |
 | `02_training_optimization/` | Mixed precision, gradient accumulation, LR schedules, optimizers, data loading |
 | `03_distributed_training/` | DDP, FSDP, tensor parallelism, pipeline parallelism, DeepSpeed ZeRO |
