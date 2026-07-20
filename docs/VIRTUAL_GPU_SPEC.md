@@ -187,7 +187,7 @@ more than a tuned one.
 | 1 | `spec.py` + `occupancy.py` — **done** (12 tests, hand-derived expectations) | ~150 lines | matches CUDA occupancy API on 10 configs (Colab verification still open); standalone useful |
 | 2 | `timing.py` + `trace.py` — **done** (model-level tests: latency hiding, bandwidth wall, tiled < naive, determinism; Chrome export structurally verified) | ~400 lines | real-T4 validation table and a visual Perfetto check still open |
 | 3 | `render.py` + notebook `01c_virtual_gpu.ipynb` — **done** (floorplan animation, waterfall, gauges; chapter on site) | ~250 lines + chapter | real-T4 comparison cells still open (Colab) |
-| 4 (stretch) | interactive HTML trace player | — | artifact prototype first; only then a site page |
+| 4 (stretch) | interactive HTML trace player — **prototyped as a private artifact** (canvas die floorplan + DRAM gauge + per-SM waterfall, time scrubber, two embedded kernel traces, light/dark; verified in-browser) | — | promote to a site page only if the prototype earns it; Perfetto covers interactive needs meanwhile |
 
 Each phase lands with tests (extend `tests/test_gpusim.py` or add `tests/test_vgpu.py`),
 ruff-clean code, docstrings that explain the *why* per `CLAUDE.md`, and — for notebook
