@@ -223,3 +223,40 @@ class TestTiming:
             isinstance(e["ts"], (int, float)) and e["dur"] >= 0 and "pid" in e and "tid" in e
             for e in evs
         )
+
+
+class TestRender:
+    def _trace(self):
+        src = np.zeros(64 * 32, dtype=np.float32)
+        return simulate(_copy_contig, 64, 32, (src, np.zeros_like(src)))
+
+    def test_waterfall_renders(self):
+        import matplotlib
+        matplotlib.use("Agg")
+        from ai_playground.gpusim import plot_waterfall
+
+        ax = plot_waterfall(self._trace(), sm=0)
+        assert ax.get_xlim()[1] > 0
+
+    def test_floorplan_frame_states(self):
+        from ai_playground.gpusim.render import _FloorplanImage
+
+        trace = self._trace()
+        fp = _FloorplanImage(trace)
+        mid = fp.frame(trace.total_cycles / 2)
+        assert mid.shape[2] == 3 and mid.shape[0] > 5
+        # mid-run the die must not be all idle: some slot shows a state color
+        idle = fp._idle
+        tiles = [mid[r, c] for r in range(mid.shape[0]) for c in range(mid.shape[1])]
+        assert any(
+            not np.allclose(px, idle) and not np.allclose(px, fp._border) and px.min() < 0.9
+            for px in tiles
+        )
+
+    def test_animation_builds(self):
+        import matplotlib
+        matplotlib.use("Agg")
+        from ai_playground.gpusim import animate_floorplan
+
+        anim = animate_floorplan(self._trace(), frames=3)
+        assert anim is not None

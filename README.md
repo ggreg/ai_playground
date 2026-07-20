@@ -45,6 +45,7 @@ A modern decoder-only transformer with all the components used in production LLM
 - Pure-Python SIMT simulator: runs CUDA-style kernels (grid/block/thread indexing, shared memory, `syncthreads` barriers) on NumPy — no GPU, no compiler, works even under Pyodide
 - Logs every memory access; counts coalescing transactions (128B segments per warp) and shared-memory bank conflicts, with per-warp access-pattern plots
 - Catches barrier divergence as an error instead of a hang
+- Cycle-approximate virtual Tesla T4: occupancy calculator, event-driven timing model (latency hiding and the bandwidth wall emerge from the rules), animated die floorplan + warp waterfall, Chrome-trace export for Perfetto
 
 ### Notebooks (`notebooks/`)
 

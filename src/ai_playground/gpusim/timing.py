@@ -176,6 +176,7 @@ def simulate(
             dram_free = start + op.cost / bytes_per_cycle
             done = dram_free + spec.lat_dram
             trace.dram_bytes += op.cost
+            trace.dram_busy.append((start, dram_free))
             trace.events.append(WarpEvent(issue, done, w.sm, w.slot, w.block, w.warp, STALL_MEM))
         elif op.kind == "smem":
             done = issue + spec.lat_smem * op.cost

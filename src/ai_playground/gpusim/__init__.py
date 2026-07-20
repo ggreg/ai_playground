@@ -24,6 +24,7 @@ from .memory import (
     coalescing_report,
     total_transactions,
 )
+from .render import animate_floorplan, plot_floorplan, plot_waterfall
 from .timing import simulate
 from .trace import Trace, WarpEvent
 from .occupancy import Occupancy, occupancy, occupancy_sweep
@@ -31,6 +32,9 @@ from .spec import SPECS, A100_40GB, T4, GPUSpec
 from .viz import plot_warp_accesses
 
 __all__ = [
+    "animate_floorplan",
+    "plot_floorplan",
+    "plot_waterfall",
     "simulate",
     "Trace",
     "WarpEvent",

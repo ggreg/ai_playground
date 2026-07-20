@@ -45,6 +45,7 @@ class Trace:
     events: list[WarpEvent] = field(default_factory=list)
     total_cycles: float = 0.0
     dram_bytes: int = 0  # transaction bytes actually moved (coalescing-aware)
+    dram_busy: list[tuple[float, float]] = field(default_factory=list)  # pipe busy intervals
 
     @property
     def time_s(self) -> float:
