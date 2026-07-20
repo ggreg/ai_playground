@@ -59,7 +59,7 @@ uv run python scripts/benchmark.py --config configs/tiny.yaml
 - `multi_agent.py` — `Supervisor` + `Worker` orchestration
 
 **Documentation** in `docs/`:
-- `LEARNING_PATH.md` — 5-phase curriculum from internals to GPU tools
+- `LEARNING_PATH.md` — 6-phase curriculum from internals to agents
 - `PAPERS.md` — Key papers organized by topic with links and summaries
 - `CONCEPTS.md` — FAQ-style deep dives on conceptual questions (embeddings, cross-entropy, bias, etc.). When the user asks a substantive conceptual question that would benefit future readers, add the answer here following the existing Q&A format.
 

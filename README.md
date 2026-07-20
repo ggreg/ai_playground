@@ -58,6 +58,7 @@ Interactive Jupyter notebooks organized by topic. Read them [on the website](htt
 | `03_distributed_training/` | DDP, FSDP, tensor parallelism, pipeline parallelism, DeepSpeed ZeRO |
 | `04_inference_optimization/` | KV cache, quantization, speculative decoding, continuous batching, Flash Attention |
 | `05_gpu_nvidia_tools/` | CUDA basics, Triton kernels, Nsight profiling, TensorRT, NCCL |
+| `06_agents/` | ReAct agent loop, tool use, memory (conversation + vector), planning, multi-agent |
 
 ## Quick Start
 

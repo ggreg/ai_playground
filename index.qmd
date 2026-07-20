@@ -16,7 +16,7 @@ continuous batching, your model's text through your own engine. The milestone ma
 
 ## Start here
 
-- **[Learning Path](docs/LEARNING_PATH.md)** — the 5-phase curriculum from transformer internals to GPU tools
+- **[Learning Path](docs/LEARNING_PATH.md)** — the 6-phase curriculum from transformer internals to building AI agents
 - **[Concepts FAQ](docs/CONCEPTS.md)** — deep dives on embeddings, cross-entropy, bias, and other conceptual questions
 - **[Papers](docs/PAPERS.md)** — key papers organized by topic with summaries
 - **[Videos](docs/VIDEOS.md)** — curated videos matched to each module (3Blue1Brown, Karpathy, GPU MODE, and more)
@@ -33,6 +33,7 @@ or open any chapter on a free GPU via its *Open in Colab* badge:
 | Training Optimization | [Training From Scratch](notebooks/02_training_optimization/00_training_from_scratch.ipynb) · [Learning Rate Schedules](notebooks/02_training_optimization/01_learning_rate_schedules.ipynb) · [Mixed Precision](notebooks/02_training_optimization/02_mixed_precision.ipynb) · [Gradient Accumulation](notebooks/02_training_optimization/03_gradient_accumulation.ipynb) · [AdamW From Scratch](notebooks/02_training_optimization/04_adamw_from_scratch.ipynb) |
 | Inference Optimization | [Build a Mini vLLM](notebooks/04_inference_optimization/00_mini_vllm.ipynb) — paged KV cache, PagedAttention, continuous batching |
 | GPU & NVIDIA Tools | [CUDA Basics](notebooks/05_gpu_nvidia_tools/01_cuda_basics.ipynb) · [SIMT Simulator](notebooks/05_gpu_nvidia_tools/01b_simt_simulator.ipynb) · [Virtual GPU](notebooks/05_gpu_nvidia_tools/01c_virtual_gpu.ipynb) · [SGEMM Optimization](notebooks/05_gpu_nvidia_tools/02_sgemm_optimization.ipynb) |
+| Building AI Agents | [What is an Agent?](notebooks/06_agents/00_what_is_an_agent.ipynb) · [Tool Use](notebooks/06_agents/01_tool_use.ipynb) · [Memory](notebooks/06_agents/02_memory.ipynb) |
 
 📍 The map at the top of each page tracks your reading progress — visited pages fill in, and the pulsing dot marks where you are. Progress is stored locally in your browser.
 

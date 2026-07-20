@@ -83,6 +83,14 @@ website:
             text: Virtual GPU
           - href: notebooks/05_gpu_nvidia_tools/02_sgemm_optimization.ipynb
             text: SGEMM Optimization
+      - section: Building AI Agents
+        contents:
+          - href: notebooks/06_agents/00_what_is_an_agent.ipynb
+            text: What is an Agent?
+          - href: notebooks/06_agents/01_tool_use.ipynb
+            text: Tool Use
+          - href: notebooks/06_agents/02_memory.ipynb
+            text: Memory
 
 format:
   html:
