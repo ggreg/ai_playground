@@ -180,6 +180,11 @@ Run on a real Colab T4 (badge already on every module-05 notebook):
 bar, the notebook shows the miss and explains it — a wrong-but-explained prediction teaches
 more than a tuned one.
 
+**Runnable harness:** `01c_virtual_gpu.ipynb` §7 contains the deviceQuery checks and the
+first two trend experiments as CUDA-guarded cells — open the chapter on Colab (T4 runtime),
+run them, and record the results here. Occupancy-API cross-check and the matmul trend are
+still to be added to the harness.
+
 ## Phases
 
 | Phase | Deliverable | Size | Definition of done |
