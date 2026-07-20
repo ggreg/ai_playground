@@ -6,6 +6,14 @@ A hands-on playground for experimenting with LLM internals, training optimizatio
 
 Source code lives at [github.com/ggreg/ai_playground](https://github.com/ggreg/ai_playground).
 
+::: {.callout-note title="🏗️ The capstone project: serve your own LLM"}
+Every chapter of this book ends with a milestone toward one goal: **design and train your own
+small LLM, then serve it through the mini-vLLM inference engine you build** — paged KV cache,
+continuous batching, your model's text through your own engine. The milestone map is on
+[The Project](docs/PROJECT.md) page; it starts with M1 in the
+[Transformer Overview](notebooks/01_transformer_internals/00_transformer_overview.ipynb).
+:::
+
 ## Start here
 
 - **[Learning Path](docs/LEARNING_PATH.md)** — the 5-phase curriculum from transformer internals to GPU tools
