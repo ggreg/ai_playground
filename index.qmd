@@ -24,13 +24,15 @@ continuous batching, your model's text through your own engine. The milestone ma
 
 ## Notebooks
 
-Interactive notebooks, rendered here for reading — clone the repo to run them yourself:
+Interactive notebooks rendered with all outputs and plots. Read them here, run them locally,
+or open any chapter on a free GPU via its *Open in Colab* badge:
 
-| Module | Topics |
-|--------|--------|
-| Transformer Internals | Attention (MHA/GQA/MQA), MoE, RoPE, RMSNorm, SwiGLU |
-| Training Optimization | Mixed precision, gradient accumulation, LR schedules, AdamW from scratch |
-| GPU & NVIDIA Tools | CUDA SGEMM optimization with five progressive kernels |
+| Module | Chapters |
+|--------|----------|
+| Transformer Internals | [Transformer Overview](notebooks/01_transformer_internals/00_transformer_overview.ipynb) · [Attention Mechanisms](notebooks/01_transformer_internals/01_attention_mechanisms.ipynb) (MHA/GQA/MQA) · [Mixture of Experts](notebooks/01_transformer_internals/02_mixture_of_experts.ipynb) |
+| Training Optimization | [Training From Scratch](notebooks/02_training_optimization/00_training_from_scratch.ipynb) · [Learning Rate Schedules](notebooks/02_training_optimization/01_learning_rate_schedules.ipynb) · [Mixed Precision](notebooks/02_training_optimization/02_mixed_precision.ipynb) · [Gradient Accumulation](notebooks/02_training_optimization/03_gradient_accumulation.ipynb) · [AdamW From Scratch](notebooks/02_training_optimization/04_adamw_from_scratch.ipynb) |
+| Inference Optimization | [Build a Mini vLLM](notebooks/04_inference_optimization/00_mini_vllm.ipynb) — paged KV cache, PagedAttention, continuous batching |
+| GPU & NVIDIA Tools | [CUDA Basics](notebooks/05_gpu_nvidia_tools/01_cuda_basics.ipynb) · [SIMT Simulator](notebooks/05_gpu_nvidia_tools/01b_simt_simulator.ipynb) · [Virtual GPU](notebooks/05_gpu_nvidia_tools/01c_virtual_gpu.ipynb) · [SGEMM Optimization](notebooks/05_gpu_nvidia_tools/02_sgemm_optimization.ipynb) |
 
 📍 The map at the top of each page tracks your reading progress — visited pages fill in, and the pulsing dot marks where you are. Progress is stored locally in your browser.
 
