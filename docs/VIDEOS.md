@@ -42,6 +42,16 @@ Curated videos matched to this repo's modules. Watching one before working throu
   The full lifecycle — pretraining, SFT, RLHF — at a conceptual level. Good for placing this repo's pretraining focus in the bigger picture.
   [Watch](https://www.youtube.com/watch?v=7xTGNNLPyMI)
 
+## Inference Optimization (`notebooks/04_inference_optimization/`)
+
+- **Fast LLM Serving with vLLM and PagedAttention** (Anyscale)
+  The vLLM authors present PagedAttention and continuous batching — the two ideas built from scratch in `00_mini_vllm.ipynb`. See [PAPERS.md](PAPERS.md) for the SOSP 2023 paper.
+  [Watch](https://www.youtube.com/watch?v=5ZlavKF_98U)
+
+- **The KV Cache: Memory Usage in Transformers** (Efficient NLP)
+  The memory math that makes serving a cache-management problem — the right primer before the mini-vLLM chapter.
+  [Watch](https://www.youtube.com/watch?v=80bIUggRJf4)
+
 ## Distributed Training (`notebooks/03_distributed_training/`)
 
 - **Distributed Training with PyTorch: complete tutorial with cloud infrastructure and code** (Umar Jamil)

@@ -66,6 +66,10 @@ website:
             text: Gradient Accumulation
           - href: notebooks/02_training_optimization/04_adamw_from_scratch.ipynb
             text: AdamW From Scratch
+      - section: Inference Optimization
+        contents:
+          - href: notebooks/04_inference_optimization/00_mini_vllm.ipynb
+            text: Build a Mini vLLM
       - section: GPU & NVIDIA Tools
         contents:
           - href: notebooks/05_gpu_nvidia_tools/01_cuda_basics.ipynb
