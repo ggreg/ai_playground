@@ -2,51 +2,100 @@
 title: "AI Playground"
 ---
 
-A hands-on playground for experimenting with LLM internals, training optimization, distributed systems, and GPU performance. Built around a clean, from-scratch LLaMA-style transformer implementation.
+An interactive, project-based book on how LLMs work — internals, training optimization,
+inference serving, and GPU performance — built around a clean, from-scratch LLaMA-style
+transformer. Its motto is Feynman's: **what I cannot create, I do not understand.** You
+don't just read this book; you build its capstone, one hour at a time, and every claim to
+understanding is checked by a test.
 
 Source code lives at [github.com/ggreg/ai_playground](https://github.com/ggreg/ai_playground).
 
 ::: {.callout-note title="🏗️ The capstone project: serve your own LLM"}
-Every chapter of this book ends with a milestone toward one goal: **design and train your own
-small LLM, then serve it through the mini-vLLM inference engine you build** — paged KV cache,
+Every chapter ends with a milestone toward one goal: **design and train your own small
+LLM, then serve it through the mini-vLLM inference engine you build** — paged KV cache,
 continuous batching, your model's text through your own engine. The milestone map is on
-[The Project](docs/PROJECT.md) page; it starts with M0 in the
-[DNN Refresher](notebooks/00_dnn_refresher/03_softmax_crossentropy.ipynb) (or M1 in the
-[Transformer Overview](notebooks/01_transformer_internals/00_transformer_overview.ipynb) if
-you skip the refresher).
+[The Project](docs/PROJECT.md) page; the finale is your trained weights generating text
+through your paged engine, verified by the same parity assert real serving systems use.
 :::
 
-## Start here
+## What's here, and how to use it
 
-- **[Learning Path](docs/LEARNING_PATH.md)** — the 6-phase curriculum from transformer internals to building AI agents
-- **[Concepts FAQ](docs/CONCEPTS.md)** — deep dives on embeddings, cross-entropy, bias, and other conceptual questions
-- **[Papers](docs/PAPERS.md)** — key papers organized by topic with summaries
-- **[Videos](docs/VIDEOS.md)** — curated videos matched to each module (3Blue1Brown, Karpathy, GPU MODE, and more)
-- **[The Project](docs/PROJECT.md)** — the capstone thread: every chapter's 🏗️ milestone builds toward training your own LLM and serving it on the mini-vLLM engine
+The book is three layers. Use any one alone, or all three together:
 
-## Notebooks
+| Layer | What it is | How you use it |
+|-------|-----------|----------------|
+| **This website** | Every chapter rendered with outputs and plots, plus the [guides](#guides) | Read anywhere, zero setup. The 📍 map at the top of each page tracks your progress (stored in your browser). |
+| **The notebooks** | The same chapters as runnable Jupyter notebooks | Clone the repo and run them locally (CPU/Apple Silicon is enough), or open any GPU chapter on a free T4 via its *Open in Colab* badge. Change things; predict before you check. |
+| **The project sessions** | One-hour study sessions pairing each chapter with a capstone step, tutored by a coding agent | `/onboard` once, then `/session` — the agent paces you, hints without ever writing your code, and verifies each milestone with `uv run pytest tests/milestones/`. |
 
-Interactive notebooks rendered with all outputs and plots. Read them here, run them locally,
-or open any chapter on a free GPU via its *Open in Colab* badge:
+**Just browsing?** Start with the [Transformer Overview](notebooks/01_transformer_internals/00_transformer_overview.ipynb)
+and follow the [Learning Path](docs/LEARNING_PATH.md).
 
-| Module | Chapters |
-|--------|----------|
-| DNN Refresher | [Neurons & MLPs](notebooks/00_dnn_refresher/00_neurons_and_mlps.ipynb) · [Backprop & Micrograd](notebooks/00_dnn_refresher/01_backprop_micrograd.ipynb) · [The Training Loop](notebooks/00_dnn_refresher/02_training_loop.ipynb) · [Softmax & Cross-Entropy](notebooks/00_dnn_refresher/03_softmax_crossentropy.ipynb) |
-| Transformer Internals | [Transformer Overview](notebooks/01_transformer_internals/00_transformer_overview.ipynb) · [Attention Mechanisms](notebooks/01_transformer_internals/01_attention_mechanisms.ipynb) (MHA/GQA/MQA) · [Mixture of Experts](notebooks/01_transformer_internals/02_mixture_of_experts.ipynb) |
-| Training Optimization | [Training From Scratch](notebooks/02_training_optimization/00_training_from_scratch.ipynb) · [Learning Rate Schedules](notebooks/02_training_optimization/01_learning_rate_schedules.ipynb) · [Mixed Precision](notebooks/02_training_optimization/02_mixed_precision.ipynb) · [Gradient Accumulation](notebooks/02_training_optimization/03_gradient_accumulation.ipynb) · [AdamW From Scratch](notebooks/02_training_optimization/04_adamw_from_scratch.ipynb) |
-| Inference Optimization | [Build a Mini vLLM](notebooks/04_inference_optimization/00_mini_vllm.ipynb) — paged KV cache, PagedAttention, continuous batching |
-| GPU & NVIDIA Tools | [CUDA Basics](notebooks/05_gpu_nvidia_tools/01_cuda_basics.ipynb) · [SIMT Simulator](notebooks/05_gpu_nvidia_tools/01b_simt_simulator.ipynb) · [Virtual GPU](notebooks/05_gpu_nvidia_tools/01c_virtual_gpu.ipynb) · [SGEMM Optimization](notebooks/05_gpu_nvidia_tools/02_sgemm_optimization.ipynb) |
-| Building AI Agents | [What is an Agent?](notebooks/06_agents/00_what_is_an_agent.ipynb) · [Tool Use](notebooks/06_agents/01_tool_use.ipynb) · [Memory](notebooks/06_agents/02_memory.ipynb) |
-
-📍 The map at the top of each page tracks your reading progress — visited pages fill in, and the pulsing dot marks where you are. Progress is stored locally in your browser.
-
-## Running locally
+**Doing the book?** Read [How to Read This Book](docs/HOW_TO_READ.md) (5 minutes), then:
 
 ```bash
 git clone https://github.com/ggreg/ai_playground.git
 cd ai_playground
 uv sync --extra dev
+uv run pytest        # all green; the 26 milestone tests skip until you earn them
+
+claude               # Claude Code, from the repo root
+> /onboard           # 5-minute interview: background, goal, hardware, pace
+> /session           # your first one-hour session starts here
+```
+
+No agent? The [Session Guide](docs/SESSIONS.md) works as a plain syllabus and the
+milestone tests verify your work either way. No GPU? Every GPU-flagged milestone has a
+stated CPU fallback, and the GPU chapters run on Colab's free T4.
+
+## The one-hour session
+
+Each session has the same shape — ~20 minutes reading and experimenting, ~30 minutes
+building the chapter's project step (**you** write the code; the agent reviews, hints by
+an escalating ladder, and keeps time), ~10 minutes verifying and logging. Every card
+marks a midpoint, so a session also splits cleanly into two 30-minute sittings. Long
+training runs are launched at the end of one session and harvested at the next.
+
+- **[How to Read This Book](docs/HOW_TO_READ.md)** — setup and the rules of the game
+- **[Session Guide](docs/SESSIONS.md)** — all 30 session cards: reading, project step, prerequisites, done-when test
+- **[Inside a Session](docs/SESSION_PROTOCOL.md)** — the full protocol: what the agent will and won't do, the hint ladder, the log
+
+## Chapters
+
+Read them here with all outputs rendered, run them locally, or open a chapter on a free
+GPU via its *Open in Colab* badge. The ⏱️ column is where each chapter sits in the
+session sequence — note the GPU module comes before the finale.
+
+| Module | Chapters | ⏱️ Sessions |
+|--------|----------|-------------|
+| DNN Refresher *(optional)* | [Neurons & MLPs](notebooks/00_dnn_refresher/00_neurons_and_mlps.ipynb) · [Backprop & Micrograd](notebooks/00_dnn_refresher/01_backprop_micrograd.ipynb) · [The Training Loop](notebooks/00_dnn_refresher/02_training_loop.ipynb) · [Softmax & Cross-Entropy](notebooks/00_dnn_refresher/03_softmax_crossentropy.ipynb) (🏗️ M0) | S0.1–S0.5 |
+| Transformer Internals | [Transformer Overview](notebooks/01_transformer_internals/00_transformer_overview.ipynb) (🏗️ M1) · [Attention Mechanisms](notebooks/01_transformer_internals/01_attention_mechanisms.ipynb) (🏗️ M2) · [Mixture of Experts](notebooks/01_transformer_internals/02_mixture_of_experts.ipynb) (🏗️ M3) | S1.1–S1.4 |
+| Training Optimization | [Training From Scratch](notebooks/02_training_optimization/00_training_from_scratch.ipynb) (🏗️ M4) · [Learning Rate Schedules](notebooks/02_training_optimization/01_learning_rate_schedules.ipynb) (🏗️ M5) · [Mixed Precision](notebooks/02_training_optimization/02_mixed_precision.ipynb) (🏗️ M6) · [Gradient Accumulation](notebooks/02_training_optimization/03_gradient_accumulation.ipynb) (🏗️ M7) · [AdamW From Scratch](notebooks/02_training_optimization/04_adamw_from_scratch.ipynb) (🏗️ M8) | S2.1–S2.8 |
+| GPU & NVIDIA Tools | [CUDA Basics](notebooks/05_gpu_nvidia_tools/01_cuda_basics.ipynb) (🏗️ M9) · [SIMT Simulator](notebooks/05_gpu_nvidia_tools/01b_simt_simulator.ipynb) (🏗️ M10) · [Virtual GPU](notebooks/05_gpu_nvidia_tools/01c_virtual_gpu.ipynb) (🏗️ M11) · [SGEMM Optimization](notebooks/05_gpu_nvidia_tools/02_sgemm_optimization.ipynb) (🏗️ M12) | S5.1–S5.8 |
+| Inference Optimization | [Build a Mini vLLM](notebooks/04_inference_optimization/00_mini_vllm.ipynb) (🏗️ M13, **the finale**) — paged KV cache, PagedAttention, continuous batching | S4.1–S4.6 |
+| Building AI Agents *(epilogue)* | [What is an Agent?](notebooks/06_agents/00_what_is_an_agent.ipynb) · [Tool Use](notebooks/06_agents/01_tool_use.ipynb) · [Memory](notebooks/06_agents/02_memory.ipynb) | S6.1–S6.3 |
+
+## Guides
+
+- **[Learning Path](docs/LEARNING_PATH.md)** — the phase-by-phase curriculum and what each milestone certifies
+- **[Concepts FAQ](docs/CONCEPTS.md)** — deep dives on embeddings, cross-entropy, bias, and other conceptual questions
+- **[Papers](docs/PAPERS.md)** — key papers organized by topic with summaries
+- **[Videos](docs/VIDEOS.md)** — curated videos matched to each module (3Blue1Brown, Karpathy, GPU MODE, and more)
+- **[Performance Exercises](docs/PERFORMANCE_EXERCISES.md)** — between-session GPU practice for readers with cloud time
+- **[Cloud Setup](docs/CLOUD_SETUP.md)** — renting a GPU when Colab isn't enough
+- **[Progress Template](docs/PROGRESS_TEMPLATE.md)** — the session-log format the agent maintains for you
+
+## Running the notebooks locally
+
+```bash
+uv sync --extra dev
+uv run --with jupyterlab jupyter lab   # then open notebooks/ and pick a chapter
 
 # Quick training sanity check (CPU/MPS, ~30 seconds)
 uv run python scripts/train.py --config configs/tiny.yaml --max-steps 20
 ```
+
+Everything imports from the `ai_playground` package — the same clean implementations the
+chapters explain (`src/ai_playground/models`, `training`, `inference`, `profiling`,
+`fundamentals`, `agents`). Your capstone artifacts live in the gitignored
+`checkpoints/myllm/` workspace; your model never leaves your machine.

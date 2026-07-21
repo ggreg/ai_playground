@@ -3,6 +3,9 @@ project:
   output-dir: _site
   render:
     - index.qmd
+    - docs/HOW_TO_READ.md
+    - docs/SESSIONS.md
+    - docs/SESSION_PROTOCOL.md
     - docs/LEARNING_PATH.md
     - docs/CONCEPTS.md
     - docs/PAPERS.md
@@ -31,10 +34,16 @@ website:
     contents:
       - href: index.qmd
         text: Home
+      - href: docs/HOW_TO_READ.md
+        text: "📖 How to Read This Book"
       - href: docs/PROJECT.md
         text: "🏗️ The Project"
+      - href: docs/SESSIONS.md
+        text: "⏱️ Session Guide"
       - section: Guides
         contents:
+          - href: docs/SESSION_PROTOCOL.md
+            text: Inside a Session
           - href: docs/LEARNING_PATH.md
             text: Learning Path
           - href: docs/CONCEPTS.md
