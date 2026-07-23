@@ -100,6 +100,10 @@ referenced again at the finale, so if you skip the sessions, still do S0.5.
 - **Artifact**: `checkpoints/myllm/metrics.json` (`m0_grad_max_abs_diff < 1e-6`,
   `m0_spiral_train_acc >= 0.95`).
 
+**After this phase**: the from-scratch project
+[p0 — Autograd from a blank file](../projects/p0_grad_engine/README.md) rebuilds the
+engine with nothing open. Untimed, outside the session sequence, same tutor ground rules.
+
 ---
 
 ## Phase 1 — Transformer Internals
@@ -156,6 +160,9 @@ referenced again at the finale, so if you skip the sessions, still do S0.5.
 - **Done-when**: `uv run pytest tests/milestones/test_m03_decisions.py`
 - **Needs**: S1.3.
 - **Artifact**: `checkpoints/myllm/DECISIONS.md` (`## M3` entry).
+
+**After this phase**: [p1 — A tiny GPT from a blank file](../projects/p1_tiny_gpt/README.md)
+— the whole architecture again, from nothing, causality test included.
 
 ---
 
@@ -271,6 +278,9 @@ referenced again at the finale, so if you skip the sessions, still do S0.5.
 - **Needs**: S2.3.
 - **Artifact**: `metrics.json` (`m8_optimizer_max_diff`).
 
+**After this phase**: [p2 — The training stack from a blank file](../projects/p2_trainer/README.md)
+— AdamW, the schedule, and accumulation, rebuilt and proven numerically.
+
 ---
 
 ## Phase 5 — GPU & NVIDIA Tools
@@ -385,6 +395,9 @@ assumes, and M10's paged gather is the finale's memory access pattern.
 - **Needs**: S5.7, S5.2.
 - **Artifact**: `metrics.json` (`m12_gemms`).
 
+**After this phase**: [p5 — A decode roofline model from a blank file](../projects/p5_roofline/README.md)
+— generalize M9/M11 into a calculator for any config on any GPU spec. No GPU needed.
+
 ---
 
 ## Phase 4 — The Finale: Serve Your Own LLM
@@ -476,6 +489,10 @@ S4.3; it grows one function per session.
 - **Needs**: S4.5.
 - **Artifact**: `metrics.json` (`m13_finale`) — and the paper trail complete.
 
+**After this phase**: [p3 — A KV-cached decoder from a blank file](../projects/p3_kv_serve/README.md)
+— the finale's core move again, standalone: no chapter engine to adapt, just a given
+model and your own cache, held to token-for-token parity.
+
 ---
 
 ## Phase 6 — Building AI Agents (epilogue, optional)
@@ -518,11 +535,16 @@ Read-only sessions; the agents package (`uv sync --extra agents`) is the worked 
 - **Needs**: S6.2.
 - **Artifact**: none.
 
+**After this phase**: [p6 — An agent from a blank file](../projects/p6_agent/README.md)
+— your own ReAct loop against a scripted LLM, no API key, error handling and step
+budget included.
+
 ---
 
 ## Not yet sessioned
 
 - **Phase 3 — Distributed Training** (`notebooks/03_distributed_training/`): no chapters
-  yet. Sessions will be added when the notebooks land.
+  yet. Sessions will be added when the notebooks land. Its from-scratch project already
+  exists and needs no GPU: [p4 — Data parallelism from a blank file](../projects/p4_ddp/README.md).
 - The [Performance Exercises](PERFORMANCE_EXERCISES.md) are excellent between-session
   material for readers with GPU time; they are deliberately outside the session sequence.

@@ -27,6 +27,8 @@ Neural-network fundamentals rebuilt from scratch, at a scale where every number 
 
 **Milestone**: You can derive and implement backprop by hand, and "train a network" means a specific five-line loop to you.
 
+**🔨 From-scratch project**: [p0 — Autograd from a blank file](../projects/p0_grad_engine/README.md) — rebuild the engine with no reference open: scalar autograd, an MLP, and a training loop that separates the moons. `uv run pytest projects/p0_grad_engine/`
+
 ## Phase 1: Transformer Internals
 
 Understand every component of a modern LLM before optimizing anything.
@@ -52,6 +54,8 @@ Understand every component of a modern LLM before optimizing anything.
 
 **Milestone**: You can read any LLM architecture paper and understand every component.
 
+**🔨 From-scratch project**: [p1 — A tiny GPT from a blank file](../projects/p1_tiny_gpt/README.md) — a working causal transformer in one file, no `ai_playground.models`, no `nn.MultiheadAttention`. `uv run pytest projects/p1_tiny_gpt/`
+
 ## Phase 2: Training Optimization
 
 Make training fast and stable on a single GPU.
@@ -76,6 +80,8 @@ Make training fast and stable on a single GPU.
 
 **Milestone**: You can train a model efficiently on a single GPU and understand every training hyperparameter.
 
+**🔨 From-scratch project**: [p2 — The training stack from a blank file](../projects/p2_trainer/README.md) — your own AdamW (matched to torch's to 1e-5), warmup+cosine schedule, and gradient accumulation proven exactly equivalent to the big batch. `uv run pytest projects/p2_trainer/`
+
 ## Phase 3: Inference Optimization
 
 Make inference fast and memory-efficient.
@@ -98,6 +104,8 @@ Make inference fast and memory-efficient.
 
 **Milestone**: You understand every optimization used in vLLM, TGI, and other serving frameworks.
 
+**🔨 From-scratch project**: [p3 — A KV-cached decoder from a blank file](../projects/p3_kv_serve/README.md) — a given model, your inference engine: full-recompute greedy, KV-cached greedy (token-for-token identical), top-p sampling. `uv run pytest projects/p3_kv_serve/`
+
 ## Phase 4: Distributed Training
 
 Scale to multiple GPUs and nodes.
@@ -114,6 +122,8 @@ Scale to multiple GPUs and nodes.
     - GPipe, 1F1B schedules, micro-batching
 
 **Milestone**: You can design a parallelism strategy for training any model on any cluster.
+
+**🔨 From-scratch project**: [p4 — Data parallelism from a blank file](../projects/p4_ddp/README.md) — hand-rolled DDP over raw collectives, 2 CPU processes, proven numerically invisible vs a single-process run. `uv run pytest projects/p4_ddp/`
 
 ## Phase 5: GPU & NVIDIA Tools
 
@@ -135,6 +145,8 @@ Squeeze maximum performance from hardware.
     - Target: 40-60% on modern GPUs
 
 **Milestone**: You can profile, diagnose, and fix GPU performance bottlenecks.
+
+**🔨 From-scratch project**: [p5 — A decode roofline model from a blank file](../projects/p5_roofline/README.md) — FLOPs, bytes, intensity, and tokens/sec predictions for any config on any GPU spec, no GPU required. `uv run pytest projects/p5_roofline/`
 
 ## Phase 6: Building AI Agents
 
@@ -164,3 +176,9 @@ Move up the stack: instead of training and serving a model, *use* one in a loop 
     - Paper: [AutoGen (Wu et al., 2023)](https://arxiv.org/abs/2308.08155)
 
 **Milestone**: You can design and build an agent for a real task (e.g. a research assistant, a code reviewer, a triage bot) and know where the failure modes live.
+
+**🔨 From-scratch project**: [p6 — An agent from a blank file](../projects/p6_agent/README.md) — your own ReAct loop with tool dispatch, error observations, and a step budget, tested against a scripted LLM (no API key). `uv run pytest projects/p6_agent/`
+
+---
+
+Every phase's from-scratch project is indexed in [projects/README.md](../projects/README.md), including the rules of the game (what each one bans you from importing) and how the acceptance tests skip-until-attempted.
