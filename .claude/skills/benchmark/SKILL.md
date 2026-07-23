@@ -1,7 +1,7 @@
 ---
 name: benchmark
 description: Run benchmarks comparing model variants, measuring inference speed, or profiling GPU performance. Use when the user wants to measure performance, compare approaches, or optimize.
-user_invocable: true
+user-invocable: true
 ---
 
 # Run Benchmarks

@@ -1,7 +1,7 @@
 ---
 name: stuck
 description: Give a hint on the reader's current obstacle using the book's escalating hint ladder — never the solution. Use when the user says /stuck, "give me a hint", or is blocked on milestone work.
-user_invocable: true
+user-invocable: true
 ---
 
 # Give a Hint

@@ -1,7 +1,7 @@
 ---
 name: onboard
 description: One-time reader interview — writes checkpoints/myllm/PROFILE.md so /session can tailor pace, hints, and hardware paths. Use when the user says /onboard, is new to the book, or wants to revise their profile.
-user_invocable: true
+user-invocable: true
 ---
 
 # Onboard a Reader

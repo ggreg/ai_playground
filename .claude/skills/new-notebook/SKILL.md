@@ -1,7 +1,7 @@
 ---
 name: new-notebook
 description: Create a new Jupyter notebook for the AI playground. Use when the user wants to add a new experiment, tutorial, or exploration notebook.
-user_invocable: true
+user-invocable: true
 ---
 
 # Create a New Notebook
@@ -11,11 +11,13 @@ When creating a new notebook for this educational AI playground, follow these co
 ## Placement
 
 Notebooks go in `notebooks/` under the appropriate topic module:
+- `00_dnn_refresher/` — neural-network fundamentals (MLPs, backprop, training loop, cross-entropy)
 - `01_transformer_internals/` — model architecture components (attention, embeddings, normalization, etc.)
 - `02_training_optimization/` — training efficiency (mixed precision, grad accumulation, LR schedules, optimizers)
 - `03_distributed_training/` — multi-GPU/multi-node (DDP, FSDP, tensor parallel, pipeline parallel)
 - `04_inference_optimization/` — serving speed (KV cache, quantization, speculative decoding, batching)
 - `05_gpu_nvidia_tools/` — GPU programming (CUDA, Triton kernels, Nsight, TensorRT, NCCL)
+- `06_agents/` — building LLM agents from scratch (tool use, memory, planning)
 
 Filename format: `NN_topic_name.ipynb` where NN is the next sequential number in that directory.
 

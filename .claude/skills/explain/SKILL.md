@@ -1,7 +1,7 @@
 ---
 name: explain
 description: Explain a concept, component, or technique in the AI playground codebase. Use when the user asks "how does X work", "why do we use X", or "explain X".
-user_invocable: true
+user-invocable: true
 ---
 
 # Explain a Concept
@@ -15,7 +15,7 @@ When explaining AI/ML concepts in this playground, follow these guidelines:
 3. **How it works** — Walk through the implementation in this codebase, referencing specific files and line numbers.
 4. **Concrete numbers** — Memory savings, speedup factors, quality impact. Reference benchmarks in the code or papers.
 5. **Tradeoffs** — What do you give up? When should you NOT use this?
-6. **Paper reference** — Author, title, year for the original paper.
+6. **Paper reference** — Author, title, year for the original paper. Link it to its entry in `docs/PAPERS.md` (or an arxiv URL if not listed there), and link any matching video in `docs/VIDEOS.md`.
 
 ## Code References
 
@@ -26,6 +26,8 @@ Always point to the actual implementation in this repo:
 - Training loop: `src/ai_playground/training/trainer.py`
 - KV cache + generation: `src/ai_playground/inference/generate.py`
 - FLOP counting: `src/ai_playground/profiling/flops.py`
+- DNN fundamentals (scalar autograd, toy MLPs): `src/ai_playground/fundamentals/`
+- Agents (ReAct loop, tools, memory, planning): `src/ai_playground/agents/`
 
 ## Depth Guidelines
 

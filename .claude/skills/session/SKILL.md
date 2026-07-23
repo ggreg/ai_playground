@@ -1,7 +1,7 @@
 ---
 name: session
 description: Run a one-hour study session of the book — locate the reader's current session, tutor through the Read and Build blocks, verify with the milestone test, and log. Use when the user says /session, "start a session", or "let's continue the book".
-user_invocable: true
+user-invocable: true
 ---
 
 # Run a Study Session

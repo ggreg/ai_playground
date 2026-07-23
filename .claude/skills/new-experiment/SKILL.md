@@ -1,7 +1,7 @@
 ---
 name: new-experiment
 description: Add a new module, layer, or experiment to the AI playground source code. Use when the user wants to implement a new model component, training technique, inference optimization, or profiling tool.
-user_invocable: true
+user-invocable: true
 ---
 
 # Add a New Experiment
@@ -14,6 +14,8 @@ When adding new source code to the AI playground, follow these guidelines:
 - **Training techniques** (optimizers, schedulers, data strategies) → `src/ai_playground/training/`
 - **Inference optimizations** (decoding strategies, quantization, caching) → `src/ai_playground/inference/`
 - **Profiling/measurement tools** → `src/ai_playground/profiling/`
+- **DNN fundamentals teaching code** (scalar autograd, toy MLPs/datasets) → `src/ai_playground/fundamentals/`
+- **Agent components** (backends, tools, memory, planners) → `src/ai_playground/agents/` (optional extra: `uv sync --extra agents`)
 - **New model configs** → `configs/` as YAML files
 
 ## Implementation Checklist
@@ -48,7 +50,7 @@ When adding new source code to the AI playground, follow these guidelines:
 ## Code Conventions
 
 - Python 3.11+ type hints: `X | None` not `Optional[X]`, `list[int]` not `List[int]`
-- No bias in Linear layers: `nn.Linear(in, out, bias=False)`
+- No bias in Linear layers: `nn.Linear(in, out, bias=False)` — exception: `fundamentals/` uses biases on purpose (see its module docstrings)
 - Pre-norm pattern: normalize → compute → residual add
 - Round hidden dimensions to multiples of 64 for GPU efficiency
 - Use `torch.amp.autocast` for mixed precision, not the deprecated `torch.cuda.amp`
