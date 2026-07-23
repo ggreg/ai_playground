@@ -30,13 +30,13 @@ exact record of what you built vs. what you were given.
 
 | # | After phase | You build from scratch | Done-when |
 |---|-------------|------------------------|-----------|
-| p0 | DNN Refresher | Scalar autograd engine + MLP + training loop | `uv run pytest projects/p0_grad_engine/` |
-| p1 | Transformer Internals | A tiny GPT (attention included) in one file | `uv run pytest projects/p1_tiny_gpt/` |
-| p2 | Training Optimization | AdamW, a cosine-warmup schedule, grad accumulation | `uv run pytest projects/p2_trainer/` |
-| p3 | Inference Optimization | A KV-cached greedy/top-p decoder for a given model | `uv run pytest projects/p3_kv_serve/` |
-| p4 | Distributed Training | Data-parallel training with raw collectives (CPU, 2 procs) | `uv run pytest projects/p4_ddp/` |
-| p5 | GPU & NVIDIA Tools | A decode roofline model (FLOPs, bytes, tokens/sec) | `uv run pytest projects/p5_roofline/` |
-| p6 | Building AI Agents | A ReAct agent loop with tools and error handling | `uv run pytest projects/p6_agent/` |
+| [p0](p0_grad_engine/README.md) | [DNN Refresher](../docs/LEARNING_PATH.md#phase-0-dnn-refresher-optional) | Scalar autograd engine + MLP + training loop | `uv run pytest projects/p0_grad_engine/` |
+| [p1](p1_tiny_gpt/README.md) | [Transformer Internals](../docs/LEARNING_PATH.md#phase-1-transformer-internals) | A tiny GPT (attention included) in one file | `uv run pytest projects/p1_tiny_gpt/` |
+| [p2](p2_trainer/README.md) | [Training Optimization](../docs/LEARNING_PATH.md#phase-2-training-optimization) | AdamW, a cosine-warmup schedule, grad accumulation | `uv run pytest projects/p2_trainer/` |
+| [p3](p3_kv_serve/README.md) | [Inference Optimization](../docs/LEARNING_PATH.md#phase-3-inference-optimization) | A KV-cached greedy/top-p decoder for a given model | `uv run pytest projects/p3_kv_serve/` |
+| [p4](p4_ddp/README.md) | [Distributed Training](../docs/LEARNING_PATH.md#phase-4-distributed-training) | Data-parallel training with raw collectives (CPU, 2 procs) | `uv run pytest projects/p4_ddp/` |
+| [p5](p5_roofline/README.md) | [GPU & NVIDIA Tools](../docs/LEARNING_PATH.md#phase-5-gpu--nvidia-tools) | A decode roofline model (FLOPs, bytes, tokens/sec) | `uv run pytest projects/p5_roofline/` |
+| [p6](p6_agent/README.md) | [Building AI Agents](../docs/LEARNING_PATH.md#phase-6-building-ai-agents) | A ReAct agent loop with tools and error handling | `uv run pytest projects/p6_agent/` |
 
 ## Rules
 
